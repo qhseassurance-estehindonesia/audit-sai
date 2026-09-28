@@ -1,0 +1,1981 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0B2545">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Form Audit SAI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --green-900: #0B2545;
+  --green-700: #1E3A5F;
+  --green-500: #3B6EA5;
+  --green-100: #DCE6F5;
+  --green-50:  #F1F5FB;
+  --red-600:   #DC2626;
+  --red-50:    #FEF2F2;
+  --amber-600: #D97706;
+  --amber-50:  #FFFBEB;
+  --gray-900:  #111827;
+  --gray-600:  #4B5563;
+  --gray-300:  #D1D5DB;
+  --gray-100:  #F3F4F6;
+  --bg:        #F4F1EB;
+  --card:      #FFFFFF;
+  --radius:    12px;
+  --shadow:    0 2px 8px rgba(0,0,0,.08);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; background: var(--bg); font-family: 'Plus Jakarta Sans', system-ui, sans-serif; font-size: 15px; color: var(--gray-900); overscroll-behavior: none; }
+
+/* ── LAYOUT ── */
+#app { display: flex; flex-direction: column; min-height: 100vh; }
+.screen { display: none; flex-direction: column; min-height: 100vh; }
+.screen.active { display: flex; }
+
+/* ── TOP BAR ── */
+.topbar { background: var(--green-900); color: #fff; padding: 16px 20px; position: sticky; top: 0; z-index: 100; }
+.topbar-row { display: flex; align-items: center; justify-content: space-between; }
+.topbar-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.topbar-logo { height: 26px; width: auto; flex-shrink: 0; }
+.topbar-title { font-size: 15px; font-weight: 700; letter-spacing: .3px; }
+.topbar-sub { font-size: 12px; opacity: .7; margin-top: 2px; }
+.progress-bar { height: 3px; background: rgba(255,255,255,.2); border-radius: 99px; margin-top: 12px; overflow: hidden; }
+.progress-fill { height: 100%; background: #4F86C6; border-radius: 99px; transition: width .4s ease; }
+.step-badge { background: rgba(255,255,255,.15); border-radius: 99px; padding: 4px 10px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+
+/* ── CONTENT AREA ── */
+.content { flex: 1; padding: 16px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.section-label { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--green-700); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.section-label::after { content: ''; flex: 1; height: 1px; background: var(--green-100); }
+
+/* ── INFO FORM ── */
+.field-group { display: flex; flex-direction: column; gap: 14px; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field label { font-size: 13px; font-weight: 600; color: var(--gray-600); }
+.field input, .field select, .field textarea {
+  border: 1.5px solid var(--gray-300); border-radius: 10px; padding: 12px 14px;
+  font-size: 15px; font-family: inherit; background: var(--card); color: var(--gray-900);
+  -webkit-appearance: none; transition: border-color .2s;
+}
+.field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--green-500); }
+.field select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%236B7280' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; }
+
+/* ── ITEM CARD ── */
+.item-card {
+  background: var(--card); border-radius: var(--radius); padding: 16px;
+  margin-bottom: 12px; box-shadow: var(--shadow); border: 1.5px solid transparent;
+  transition: border-color .2s;
+}
+.item-card.comply { border-color: var(--green-500); background: var(--green-50); }
+.item-card.noncomply { border-color: var(--red-600); background: var(--red-50); }
+.item-card.grouping { border-left: 3px solid var(--amber-600); }
+
+.item-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.item-code { font-size: 11px; font-weight: 700; letter-spacing: .5px; color: var(--green-700); font-family: 'Courier New', monospace; background: var(--green-100); padding: 2px 7px; border-radius: 5px; white-space: nowrap; }
+.item-cat { font-size: 10px; font-weight: 700; letter-spacing: .5px; padding: 2px 7px; border-radius: 99px; white-space: nowrap; }
+.cat-N  { background: #F3F4F6; color: #4B5563; }
+.cat-S  { background: #FEF3C7; color: #92400E; }
+.cat-C  { background: #FEE2E2; color: #991B1B; }
+.cat-VC { background: #450A0A; color: #FEE2E2; }
+.cat-FS { background: #D1FAE5; color: #065F46; }
+.item-label { font-size: 14px; line-height: 1.5; color: var(--gray-900); margin-bottom: 14px; }
+
+/* ── YA / TIDAK ── */
+.answer-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+.answer-btn {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 11px; border-radius: 10px; border: 2px solid var(--gray-300);
+  font-size: 14px; font-weight: 600; cursor: pointer; transition: all .15s;
+  background: var(--card); color: var(--gray-600); user-select: none;
+}
+.answer-btn.ya.selected  { background: var(--green-100); border-color: var(--green-500); color: var(--green-900); }
+.answer-btn.tidak.selected { background: var(--red-50); border-color: var(--red-600); color: var(--red-600); }
+.answer-btn:active { transform: scale(.97); }
+
+/* ── CATATAN ── */
+.catatan-field {
+  width: 100%; border: 1.5px solid var(--gray-300); border-radius: 10px;
+  padding: 10px 12px; font-size: 13px; font-family: inherit; resize: none;
+  min-height: 60px; background: var(--card); color: var(--gray-900);
+  transition: border-color .2s; margin-bottom: 12px;
+}
+.catatan-field:focus { outline: none; border-color: var(--green-500); }
+.catatan-field.hidden { display: none; }
+
+/* ── FOTO UPLOAD ── */
+.foto-area { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.foto-btn {
+  display: inline-flex; align-items: center; gap: 6px; padding: 9px 14px;
+  background: var(--gray-100); border: 1.5px dashed var(--gray-300);
+  border-radius: 10px; font-size: 13px; font-weight: 600; color: var(--gray-600);
+  cursor: pointer; transition: all .15s; white-space: nowrap;
+}
+.foto-btn.uploaded { background: var(--green-50); border-color: var(--green-500); color: var(--green-700); border-style: solid; }
+.foto-btn.uploading { opacity: .6; pointer-events: none; }
+.foto-input { display: none; }
+.foto-thumb { width: 52px; height: 52px; border-radius: 8px; object-fit: cover; border: 2px solid var(--green-300); display: none; }
+.foto-thumb.show { display: block; }
+.upload-status { font-size: 11px; color: var(--gray-600); }
+
+/* ── GROUPING BADGE ── */
+.grouping-badge {
+  font-size: 11px; background: var(--amber-50); color: var(--amber-600);
+  padding: 6px 10px; border-radius: 8px; margin-bottom: 14px;
+  border: 1px solid #FDE68A;
+}
+
+/* ── GROUP WRAPPER (penanda visual kumpulan item 1 grouping) ── */
+/* Warna per grouping diatur lewat CSS var --group-color, di-set inline
+   oleh JS per grouping (lihat GROUP_INFO) — supaya tiap grouping di
+   Interior Appearance punya warna beda, jadi auditor nggak bingung
+   pas scroll ngelewatin banyak grouping berurutan (EA cuma 1 grouping
+   jadi tetap amber, aman dari kebingungan itu). */
+.group-wrapper {
+  --group-color: var(--amber-600); /* fallback kalau JS lupa nyetel */
+  --group-bg: rgba(217,119,6,.04);  /* fallback */
+  border: 1.5px dashed var(--group-color); border-radius: 14px;
+  padding: 12px 12px 4px; margin-bottom: 16px; background: var(--group-bg);
+}
+.group-header {
+  display: flex; flex-direction: column; gap: 2px;
+  margin-bottom: 10px; padding: 0 4px;
+}
+.group-header-title {
+  font-size: 13px; font-weight: 700; color: var(--group-color);
+}
+.group-header-note {
+  font-size: 11px; color: var(--gray-600);
+}
+
+/* ── SCORE PREVIEW (di halaman Review) ── */
+.score-grid {
+  display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 12px;
+}
+.score-card {
+  background: var(--gray-100); border-radius: 10px; padding: 12px 6px; text-align: center;
+}
+.score-card-label { font-size: 10.5px; color: var(--gray-600); margin-bottom: 4px; }
+.score-card-value { font-size: 22px; font-weight: 700; color: var(--gray-900); }
+.score-card-sub { font-size: 10px; color: var(--gray-600); margin-top: 2px; }
+.sanksi-banner {
+  border-radius: 10px; padding: 10px 14px; color: #fff;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.sanksi-banner-title { font-size: 13px; font-weight: 700; }
+.sanksi-banner-desc { font-size: 11px; font-weight: 400; opacity: .85; }
+.score-disclaimer { font-size: 10.5px; color: var(--gray-600); margin-top: 8px; line-height: 1.4; }
+
+/* ── BOTTOM NAV ── */
+.bottom-nav { padding: 16px; background: var(--bg); border-top: 1px solid var(--gray-300); position: sticky; bottom: 0; }
+.btn-primary {
+  width: 100%; padding: 16px; background: var(--green-900); color: #fff;
+  border: none; border-radius: 12px; font-size: 16px; font-weight: 700;
+  font-family: inherit; cursor: pointer; transition: all .15s; letter-spacing: .3px;
+}
+.btn-primary:active { transform: scale(.98); background: var(--green-700); }
+.btn-primary:disabled { opacity: .5; pointer-events: none; }
+.btn-secondary {
+  width: 100%; padding: 14px; background: transparent; color: var(--gray-600);
+  border: 1.5px solid var(--gray-300); border-radius: 12px; font-size: 14px;
+  font-weight: 600; font-family: inherit; cursor: pointer; margin-top: 8px;
+}
+.btn-secondary:active { background: var(--gray-100); }
+
+/* ── SPLASH ── */
+#screen-splash { background: var(--green-900); color: #fff; justify-content: center; align-items: center; padding: 40px 28px; text-align: center; }
+.splash-logo-img { width: 220px; max-width: 60%; height: auto; margin-bottom: 20px; }
+.splash-title { font-size: 28px; font-weight: 700; letter-spacing: -.5px; margin-bottom: 8px; }
+.splash-sub { font-size: 15px; opacity: .7; margin-bottom: 40px; line-height: 1.5; }
+.splash-btn { background: #fff; color: var(--green-900); border: none; border-radius: 14px; padding: 18px 36px; font-size: 17px; font-weight: 700; font-family: inherit; cursor: pointer; transition: transform .15s; }
+.splash-btn:active { transform: scale(.97); }
+.splash-info { margin-top: 20px; font-size: 12px; opacity: .5; }
+
+/* ── SUBMIT SCREEN ── */
+#screen-submit { background: var(--green-900); color: #fff; justify-content: center; align-items: center; padding: 40px 28px; text-align: center; }
+.submit-icon { font-size: 56px; margin-bottom: 16px; }
+.submit-title { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+.submit-sub { font-size: 14px; opacity: .7; max-width: 280px; margin: 0 auto; line-height: 1.6; }
+.submit-spinner { width: 40px; height: 40px; border: 3px solid rgba(255,255,255,.2); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; margin: 0 auto 16px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.submit-progress { margin-top: 20px; font-size: 13px; opacity: .6; }
+
+/* ── SECTION HEADER CARD ── */
+.section-card { background: var(--green-900); color: #fff; border-radius: var(--radius); padding: 16px 20px; margin-bottom: 20px; }
+.section-card-name { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+.section-card-sub  { font-size: 12px; opacity: .7; }
+
+/* ── SUMMARY ROW ── */
+.summary-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--gray-100); }
+.summary-label { font-size: 13px; color: var(--gray-600); }
+.summary-value { font-size: 13px; font-weight: 600; }
+.badge-pass { background: var(--green-100); color: var(--green-900); padding: 2px 8px; border-radius: 99px; font-size: 11px; }
+.badge-fail { background: #FEE2E2; color: #991B1B; padding: 2px 8px; border-radius: 99px; font-size: 11px; }
+
+/* ── REVIEW ── */
+.review-section { background: var(--card); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; box-shadow: var(--shadow); }
+.review-section-title { font-size: 13px; font-weight: 700; color: var(--green-700); margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; }
+.review-count { font-size: 12px; background: var(--gray-100); padding: 2px 8px; border-radius: 99px; color: var(--gray-600); }
+.review-row { display: flex; align-items: flex-start; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--gray-100); gap: 8px; }
+.review-row:last-child { border-bottom: none; }
+.review-row-label { font-size: 12px; color: var(--gray-600); flex: 1; line-height: 1.4; }
+.review-row-status { font-size: 12px; font-weight: 600; white-space: nowrap; }
+.status-ya { color: var(--green-700); }
+.status-tidak { color: var(--red-600); }
+
+/* ── SIGNATURE ─────────────────────────────────────────────── */
+.sig-block   { background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:16px;box-shadow:var(--shadow); }
+.sig-label   { font-size:13px;font-weight:700;color:var(--gray-600);margin-bottom:8px; }
+.sig-sub     { font-size:12px;color:#aaa;margin-bottom:10px; }
+.sig-canvas  { width:100%;height:140px;border:2px dashed var(--gray-300);border-radius:10px;
+               touch-action:none;cursor:crosshair;background:#FAFAF8;display:block; }
+.sig-canvas.has-sig { border-color:var(--green-500);border-style:solid; }
+.sig-footer  { display:flex;align-items:center;justify-content:space-between;margin-top:8px; }
+.sig-clear   { background:var(--gray-100);border:1px solid var(--gray-300);border-radius:8px;
+               padding:7px 14px;font-size:13px;cursor:pointer;color:var(--gray-600);font-family:inherit; }
+.sig-hint    { font-size:11px;color:#aaa; }
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ── SPLASH ─────────────────────────────────────────────── -->
+<div id="screen-splash" class="screen active">
+  <img class="splash-logo-img" src="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20100%20100%22%3E%0A%3Ccircle%20cx%3D%2250%22%20cy%3D%2250%22%20r%3D%2248%22%20fill%3D%22%230B2545%22/%3E%0A%3Cpath%20d%3D%22M36%2030%20Q32%2022%2038%2015%22%20stroke%3D%22%23FFFFFF%22%20stroke-width%3D%224%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22%20opacity%3D%220.85%22/%3E%0A%3Cpath%20d%3D%22M50%2030%20Q46%2022%2052%2015%22%20stroke%3D%22%23FFFFFF%22%20stroke-width%3D%224%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22%20opacity%3D%220.85%22/%3E%0A%3Cpath%20d%3D%22M64%2030%20Q60%2022%2066%2015%22%20stroke%3D%22%23FFFFFF%22%20stroke-width%3D%224%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22%20opacity%3D%220.85%22/%3E%0A%3Cpath%20d%3D%22M26%2042%20H70%20V58%20A22%2022%200%200%201%2026%2058%20Z%22%20fill%3D%22%23FFFFFF%22/%3E%0A%3Cpath%20d%3D%22M70%2046%20H76%20A8%208%200%200%201%2076%2062%20H70%22%20fill%3D%22none%22%20stroke%3D%22%23FFFFFF%22%20stroke-width%3D%225%22/%3E%0A%3Crect%20x%3D%2222%22%20y%3D%2278%22%20width%3D%2256%22%20height%3D%226%22%20rx%3D%223%22%20fill%3D%22%23FFFFFF%22/%3E%0A%3C/svg%3E" alt="Esteh Specialtea">
+  <h1 class="splash-title">Form Audit SAI</h1>
+  <p class="splash-sub">Esteh Specialtea<br>Food Safety · Brand Standards · Local Standards</p>
+  <button class="splash-btn" onclick="startForm()">Mulai Audit →</button>
+  <p class="splash-info">84 checklist item · Foto dari kamera atau galeri · Maks 3/item</p>
+</div>
+
+<!-- ── INFORMASI AUDIT ──────────────────────────────────── -->
+<div id="screen-info" class="screen">
+  <div class="topbar">
+    <div class="topbar-row">
+      <div class="topbar-left">
+        <img class="topbar-logo" id="topbar-logo-info" alt="Esteh Specialtea">
+        <div>
+          <div class="topbar-title">Form Audit SAI</div>
+          <div class="topbar-sub">Informasi Audit</div>
+        </div>
+      </div>
+      <div class="step-badge">0 / 9</div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" style="width:5%"></div></div>
+  </div>
+  <div class="content">
+    <div class="section-card">
+      <div class="section-card-name">Informasi Audit</div>
+      <div class="section-card-sub">Lengkapi semua field sebelum memulai checklist</div>
+    </div>
+    <div class="field-group">
+      <div class="field">
+        <label>Nomor Outlet <span style="color:var(--red-600)">*</span></label>
+        <input type="text" id="f-outlet" placeholder="Contoh: 0001" autocomplete="off" inputmode="numeric" pattern="[0-9]*" maxlength="4" oninput="this.value=this.value.replace(/[^0-9]/g,'')" onblur="if(this.value)this.value=this.value.padStart(4,'0')">
+      </div>
+      <div class="field">
+        <label>Nama Outlet <span style="color:var(--red-600)">*</span></label>
+        <input type="text" id="f-nama-outlet" placeholder="Contoh: Esteh Specialtea Sudirman" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Alamat Kebun <span style="color:var(--red-600)">*</span></label>
+        <input type="text" id="f-alamat" placeholder="Alamat lengkap outlet" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Nama Auditor <span style="color:var(--red-600)">*</span></label>
+        <input type="text" id="f-auditor" placeholder="Nama lengkap" autocomplete="name">
+      </div>
+      <div class="field">
+        <label>Tanggal Audit <span style="color:var(--red-600)">*</span></label>
+        <input type="date" id="f-tanggal">
+      </div>
+      <div class="field">
+        <label>Posisi Auditor <span style="color:var(--red-600)">*</span></label>
+        <input type="text" id="f-posisi" placeholder="Contoh: Area Manager">
+      </div>
+      <div class="field">
+        <label>Kategori Audit <span style="color:var(--red-600)">*</span></label>
+        <select id="f-kategori">
+          <option value="">-- Pilih --</option>
+          <option>Scheduled</option>
+          <option>Unscheduled</option>
+          <option>Re-Audit</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Status Kebun <span style="color:var(--red-600)">*</span></label>
+        <select id="f-status">
+          <option value="">-- Pilih --</option>
+          <option>Aktif</option>
+          <option>Sementara Tutup</option>
+          <option>Renovasi</option>
+          <option>Grand Opening</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Email PIC Outlet <span style="color:var(--red-600)">*</span></label>
+        <input type="email" id="f-email" placeholder="picoutlet@email.com" autocomplete="email">
+      </div>
+    </div>
+  </div>
+  <div class="bottom-nav">
+    <button class="btn-primary" onclick="submitInfo()">Mulai Checklist →</button>
+  </div>
+</div>
+
+<!-- ── SECTION SCREENS (generated by JS) ──────────────────── -->
+<div id="screen-sections"></div>
+
+
+<!-- ── SIGNATURE SCREEN ───────────────────────────────────────── -->
+<div id="screen-signature" class="screen">
+  <div class="topbar">
+    <div class="topbar-row">
+      <div class="topbar-left">
+        <img class="topbar-logo" id="topbar-logo-sig" alt="Esteh Specialtea">
+        <div>
+          <div class="topbar-title">Tanda Tangan</div>
+          <div class="topbar-sub">Langkah terakhir sebelum submit</div>
+        </div>
+      </div>
+      <div class="step-badge">✍️</div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" style="width:96%"></div></div>
+  </div>
+  <div class="content">
+    <div class="section-card">
+      <div class="section-card-name">Tanda Tangan Digital</div>
+      <div class="section-card-sub">Tanda tangan akan dicetak di laporan PDF</div>
+    </div>
+
+    <div style="margin-bottom:20px;">
+      <div class="section-label">Auditor</div>
+      <div style="background:#fff;border-radius:12px;padding:12px;box-shadow:var(--shadow);">
+        <p style="font-size:12px;color:var(--gray-600);margin-bottom:8px;">Tanda tangan di kotak bawah ini:</p>
+        <canvas id="canvas-auditor" width="600" height="180"
+          style="border:2px solid #7FA8D9;border-radius:8px;width:100%;height:160px;display:block;background:#FAFAF8;cursor:crosshair;touch-action:none;"></canvas>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button id="btn-ulangi-auditor" class="btn-secondary" style="margin:0;padding:8px 16px;font-size:13px;flex:0;">
+            Ulangi
+          </button>
+          <span id="sig-auditor-status" style="font-size:12px;color:var(--gray-600);align-self:center;"></span>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:20px;">
+      <div class="section-label">PIC Outlet</div>
+      <div style="background:#fff;border-radius:12px;padding:12px;box-shadow:var(--shadow);margin-bottom:12px;">
+        <div class="field" style="margin-bottom:12px;">
+          <label>Nama PIC Outlet <span style="color:var(--red-600)">*</span></label>
+          <input type="text" id="f-pic-nama" placeholder="Nama lengkap PIC" autocomplete="off" oninput="auditInfo.namaPIC=this.value;saveProgress();">
+        </div>
+        <div class="field">
+          <label>Jabatan PIC Outlet <span style="color:var(--red-600)">*</span></label>
+          <input type="text" id="f-pic-jabatan" placeholder="Contoh: Store Manager, Supervisor" autocomplete="off" oninput="auditInfo.jabatanPIC=this.value;saveProgress();">
+        </div>
+      </div>
+      <div style="background:#fff;border-radius:12px;padding:12px;box-shadow:var(--shadow);">
+        <p style="font-size:12px;color:var(--gray-600);margin-bottom:8px;">Minta PIC outlet tanda tangan di sini:</p>
+        <canvas id="canvas-pic" width="600" height="180"
+          style="border:2px solid #7FA8D9;border-radius:8px;width:100%;height:160px;display:block;background:#FAFAF8;cursor:crosshair;touch-action:none;"></canvas>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button id="btn-ulangi-pic" class="btn-secondary" style="margin:0;padding:8px 16px;font-size:13px;flex:0;">
+            Ulangi
+          </button>
+          <span id="sig-pic-status" style="font-size:12px;color:var(--gray-600);align-self:center;"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+    <!-- Foto Dokumentasi -->
+  <div style="background:#fff;border-radius:12px;padding:16px;margin:0 16px 16px;box-shadow:var(--shadow);">
+    <div class="section-label" style="margin-bottom:12px;">FOTO DOKUMENTASI</div>
+
+    <div style="margin-bottom:16px;">
+      <p style="font-size:13px;font-weight:600;color:var(--gray-900);margin-bottom:4px;">📸 Foto Bersama Auditor &amp; Auditee</p>
+      <p style="font-size:11px;color:var(--gray-600);margin-bottom:8px;">Bukti kehadiran audit</p>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <input type="file" accept="image/*,video/*" capture="environment" class="foto-input" id="foto-cam-bersama" onchange="handleExtraPhoto(event,'bersama')">
+        <input type="file" accept="image/*,video/*" class="foto-input" id="foto-input-bersama" onchange="handleExtraPhoto(event,'bersama')">
+        <label class="foto-btn" id="foto-btn-bersama" style="font-size:12px;padding:8px 10px;" for="foto-cam-bersama">📷 Kamera</label>
+        <label class="foto-btn" style="font-size:12px;padding:8px 10px;" for="foto-input-bersama">🖼 Galeri</label>
+        <button type="button" class="foto-btn" id="foto-remove-bersama" style="display:none;font-size:12px;padding:8px 10px;color:var(--red-600);border-color:var(--red-600);" onclick="removeExtraFoto('bersama')">🗑 Hapus</button>
+        <img class="foto-thumb" id="foto-thumb-bersama">
+        <span class="upload-status" id="foto-status-bersama"></span>
+      </div>
+    </div>
+
+    <div>
+      <p style="font-size:13px;font-weight:600;color:var(--gray-900);margin-bottom:4px;">📖 Foto Communication Book</p>
+      <p style="font-size:11px;color:var(--gray-600);margin-bottom:8px;">Hasil pengisian communication book di outlet</p>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <input type="file" accept="image/*,video/*" capture="environment" class="foto-input" id="foto-cam-commbook" onchange="handleExtraPhoto(event,'commbook')">
+        <input type="file" accept="image/*,video/*" class="foto-input" id="foto-input-commbook" onchange="handleExtraPhoto(event,'commbook')">
+        <label class="foto-btn" id="foto-btn-commbook" style="font-size:12px;padding:8px 10px;" for="foto-cam-commbook">📷 Kamera</label>
+        <label class="foto-btn" style="font-size:12px;padding:8px 10px;" for="foto-input-commbook">🖼 Galeri</label>
+        <button type="button" class="foto-btn" id="foto-remove-commbook" style="display:none;font-size:12px;padding:8px 10px;color:var(--red-600);border-color:var(--red-600);" onclick="removeExtraFoto('commbook')">🗑 Hapus</button>
+        <img class="foto-thumb" id="foto-thumb-commbook">
+        <span class="upload-status" id="foto-status-commbook"></span>
+      </div>
+    </div>
+  </div>
+
+<div class="bottom-nav">
+    <button class="btn-primary" onclick="submitSignatures()">Lanjut Review →</button>
+    <button class="btn-secondary" onclick="goToSection(8)">← Kembali ke FS</button>
+  </div>
+</div>
+
+
+<!-- ── TANDA TANGAN ────────────────────────────────────────── -->
+<!-- ── REVIEW ──────────────────────────────────────────────── -->
+<div id="screen-review" class="screen">
+  <div class="topbar">
+    <div class="topbar-row">
+      <div class="topbar-left">
+        <img class="topbar-logo" id="topbar-logo-review" alt="Esteh Specialtea">
+        <div>
+          <div class="topbar-title">Periksa Kembali</div>
+          <div class="topbar-sub">Review sebelum submit</div>
+        </div>
+      </div>
+      <div class="step-badge">✓ 9/9</div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" style="width:98%"></div></div>
+  </div>
+  <div class="content" id="review-content"></div>
+  <div class="bottom-nav">
+    <button class="btn-primary" id="btn-final-submit" onclick="finalSubmit()">📤 Kirim Laporan Audit</button>
+    <button class="btn-secondary" onclick="goToSection(currentSectionIdx)">← Kembali Edit</button>
+  </div>
+</div>
+
+<!-- ── SUBMIT PROGRESS ─────────────────────────────────────── -->
+<div id="screen-submit" class="screen">
+  <div class="submit-spinner"></div>
+  <div class="submit-title">Mengirim Data...</div>
+  <div class="submit-sub">Data audit sedang dikirim ke server.<br>Proses ini seharusnya selesai dalam beberapa detik.</div>
+  <div class="submit-progress" id="submit-progress-text">Mengirim data ke server...</div>
+</div>
+
+<!-- ── SUCCESS ──────────────────────────────────────────────── -->
+<div id="screen-success" class="screen">
+  <div style="background:var(--green-900);color:#fff;flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:40px 28px;text-align:center;">
+    <div class="submit-icon">✅</div>
+    <div class="submit-title">Audit Berhasil Dikirim!</div>
+    <div class="submit-sub" id="success-msg" style="margin-top:12px;">Data berhasil diterima! Laporan PDF sedang diproses dan akan dikirim ke email PIC outlet dalam 1-3 menit.</div>
+    <div style="display:flex;flex-direction:column;gap:12px;margin-top:32px;width:100%;max-width:280px;">
+      <button class="splash-btn" onclick="resetForm()">+ Audit Baru</button>
+      <button onclick="loadLastSubmission()"
+        style="background:rgba(255,255,255,.15);border:2px solid rgba(255,255,255,.4);color:#fff;
+               border-radius:14px;padding:14px 24px;font-size:15px;font-weight:600;
+               font-family:inherit;cursor:pointer;">
+        ✏️ Revisi & Kirim Ulang
+      </button>
+    </div>
+    <p style="margin-top:16px;font-size:11px;opacity:.5;">Gunakan "Revisi" jika ada typo atau kesalahan data</p>
+  </div>
+</div>
+
+</div><!-- #app -->
+
+<script>
+// ================================================================
+// ⚙️  GANTI URL INI dengan URL deployment Apps Script kamu
+//     Ambil dari: Apps Script → Deploy → Manage deployments → copy URL
+// ================================================================
+const APPS_SCRIPT_URL = 'PASTE_URL_WEB_APP_SAI_DI_SINI';
+
+// Logo kecil untuk topbar (versi putih, dipakai ulang di semua halaman —
+// satu konstanta biar base64-nya cuma nongol 1x di source, bukan berkali-kali)
+const LOGO_DATA_URI = 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20100%20100%22%3E%0A%3Ccircle%20cx%3D%2250%22%20cy%3D%2250%22%20r%3D%2248%22%20fill%3D%22%230B2545%22/%3E%0A%3Cpath%20d%3D%22M36%2030%20Q32%2022%2038%2015%22%20stroke%3D%22%23FFFFFF%22%20stroke-width%3D%224%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22%20opacity%3D%220.85%22/%3E%0A%3Cpath%20d%3D%22M50%2030%20Q46%2022%2052%2015%22%20stroke%3D%22%23FFFFFF%22%20stroke-width%3D%224%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22%20opacity%3D%220.85%22/%3E%0A%3Cpath%20d%3D%22M64%2030%20Q60%2022%2066%2015%22%20stroke%3D%22%23FFFFFF%22%20stroke-width%3D%224%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22%20opacity%3D%220.85%22/%3E%0A%3Cpath%20d%3D%22M26%2042%20H70%20V58%20A22%2022%200%200%201%2026%2058%20Z%22%20fill%3D%22%23FFFFFF%22/%3E%0A%3Cpath%20d%3D%22M70%2046%20H76%20A8%208%200%200%201%2076%2062%20H70%22%20fill%3D%22none%22%20stroke%3D%22%23FFFFFF%22%20stroke-width%3D%225%22/%3E%0A%3Crect%20x%3D%2222%22%20y%3D%2278%22%20width%3D%2256%22%20height%3D%226%22%20rx%3D%223%22%20fill%3D%22%23FFFFFF%22/%3E%0A%3C/svg%3E';
+
+// Isi src logo untuk 3 topbar statis (info/signature/review) yang sengaja
+// dibiarkan tanpa src di HTML, biar base64 logo cuma nongol 1x di source file
+// (topbar section dinamis sudah dapat src langsung lewat template literal).
+document.querySelectorAll('.topbar-logo:not([src])').forEach(function(img){ img.src = LOGO_DATA_URI; });
+
+// ── DATA DARI SERVER ─────────────────────────────────────────
+const ITEMS = [
+  {code:"HS11.1",section:"HS",label:"Crew & PIC menggunakan Seragam Standar Esteh Specialtea",cat:"N",pts:1,groupParent:null},
+  {code:"HS11.2",section:"HS",label:"Crew & PIC berpenampilan & menerapkan personal higiene sesuai standar",cat:"C",pts:4,groupParent:null},
+  {code:"HS12.1",section:"HS",label:"Crew & PIC menerapkan pelayanan sesuai standar",cat:"N",pts:1,groupParent:null},
+  {code:"HS12.2",section:"HS",label:"Crew & PIC menerapkan standar customer retention",cat:"N",pts:1,groupParent:null},
+  {code:"HS12.3",section:"HS",label:"Crew & PIC menerapkan standar customer feedback",cat:"N",pts:1,groupParent:null},
+  {code:"SS11.1",section:"SS",label:"Durasi pembuatan produk dan speed of service sesuai standar",cat:"N",pts:1,groupParent:null},
+  {code:"SS11.2",section:"SS",label:"Manajemen PIC & Crew mendukung tercapainya standar speed of service",cat:"N",pts:1,groupParent:null},
+  {code:"SS11.3",section:"SS",label:"Sistem POS berjalan sesuai standar",cat:"N",pts:1,groupParent:null},
+  {code:"SS11.4",section:"SS",label:"Layout Kebun sesuai dengan standar Manajemen",cat:"N",pts:1,groupParent:null},
+  {code:"PS11.1",section:"PS",label:"Melakukan Up-Selling, Suggestive Selling, dan Cross-Selling",cat:"N",pts:1,groupParent:null},
+  {code:"PS12.1",section:"PS",label:"Semua menu nasional tersedia",cat:"N",pts:1,groupParent:null},
+  {code:"PS12.2",section:"PS",label:"Semua menu lokal tersedia",cat:"N",pts:1,groupParent:null},
+  {code:"PS13.1",section:"PS",label:"Jam Operasional Kebun sesuai dengan persetujuan Manajemen",cat:"C",pts:4,groupParent:null},
+  {code:"PS13.2",section:"PS",label:"Manajemen cleaning Kebun tersedia dan diterapkan sesuai standar",cat:"N",pts:1,groupParent:null},
+  {code:"PS13.3",section:"PS",label:"Staffing, Leadership, dan Positioning Crew Kebun diterapkan",cat:"N",pts:1,groupParent:null},
+  {code:"PS13.4",section:"PS",label:"Laporan harian Kebun diterapkan sesuai standar",cat:"N",pts:1,groupParent:null},
+  {code:"PS14.1",section:"PS",label:"Seluruh POP dipasang, terbarukan, posisinya benar, kondisinya baik",cat:"N",pts:1,groupParent:null},
+  {code:"PS14.2",section:"PS",label:"Channel Online Merchant aktif dan diterapkan dengan benar",cat:"N",pts:1,groupParent:null},
+  {code:"PS15.1",section:"PS",label:"Seluruh promo nasional diterapkan sesuai standar",cat:"N",pts:1,groupParent:null},
+  {code:"PS15.2",section:"PS",label:"Promo lokal diterapkan sesuai persetujuan Manajemen",cat:"N",pts:1,groupParent:null},
+  {code:"EA11.1",section:"EA",label:"EA11 — Cleanliness: Bangunan, Atap, Dinding, Lantai",cat:"S",pts:0,groupParent:"EA"},
+  {code:"EA11.2",section:"EA",label:"EA11 — R&M: Bangunan, Atap, Dinding, Lantai",cat:"S",pts:0,groupParent:"EA"},
+  {code:"EA12.1",section:"EA",label:"EA12 — Cleanliness: Halaman, Lahan Parkir, Tempat Sampah",cat:"S",pts:0,groupParent:"EA"},
+  {code:"EA12.2",section:"EA",label:"EA12 — R&M: Halaman, Lahan Parkir, Tempat Sampah",cat:"S",pts:0,groupParent:"EA"},
+  {code:"EA13.1",section:"EA",label:"EA13 — Cleanliness: Pintu, Kusen, Jendela",cat:"S",pts:0,groupParent:"EA"},
+  {code:"EA13.2",section:"EA",label:"EA13 — R&M: Pintu, Kusen, Jendela",cat:"S",pts:0,groupParent:"EA"},
+  {code:"EA14.1",section:"EA",label:"EA14 — Cleanliness: Furnitur",cat:"S",pts:0,groupParent:"EA"},
+  {code:"EA14.2",section:"EA",label:"EA14 — R&M: Furnitur",cat:"S",pts:0,groupParent:"EA"},
+  {code:"EA15.1",section:"EA",label:"EA15 — Cleanliness: Letter Sign & Neon Box",cat:"S",pts:0,groupParent:"EA"},
+  {code:"EA15.2",section:"EA",label:"EA15 — R&M: Letter Sign & Neon Box",cat:"S",pts:0,groupParent:"EA"},
+  {code:"EA16.1",section:"EA",label:"EA16 — Cleanliness: Gawangan & Counter Depan",cat:"S",pts:0,groupParent:"EA"},
+  {code:"EA16.2",section:"EA",label:"EA16 — R&M: Gawangan & Counter Depan",cat:"S",pts:0,groupParent:"EA"},
+  {code:"EA17.1",section:"EA",label:"EA17 — Cleanliness: Langit-langit dan Lampu Penerangan",cat:"S",pts:0,groupParent:"EA"},
+  {code:"EA17.2",section:"EA",label:"EA17 — R&M: Langit-langit dan Lampu Penerangan",cat:"S",pts:0,groupParent:"EA"},
+  {code:"IA11.1",section:"IA",label:"IA11 — Cleanliness: Dinding, Dekorasi, dan Lantai",cat:"S",pts:0,groupParent:"IA1"},
+  {code:"IA11.2",section:"IA",label:"IA11 — R&M: Dinding, Dekorasi, dan Lantai",cat:"S",pts:0,groupParent:"IA1"},
+  {code:"IA12.1",section:"IA",label:"IA12 — Cleanliness: Cashier Area",cat:"S",pts:0,groupParent:"IA1"},
+  {code:"IA12.2",section:"IA",label:"IA12 — R&M: Cashier Area",cat:"S",pts:0,groupParent:"IA1"},
+  {code:"IA13.1",section:"IA",label:"IA13 — Cleanliness: Meja dan Kursi Dining",cat:"S",pts:0,groupParent:"IA1"},
+  {code:"IA13.2",section:"IA",label:"IA13 — R&M: Meja dan Kursi Dining",cat:"S",pts:0,groupParent:"IA1"},
+  {code:"IA14.1",section:"IA",label:"IA14 — Cleanliness: Langit-langit, Lampu, Ventilasi Dining",cat:"S",pts:0,groupParent:"IA1"},
+  {code:"IA14.2",section:"IA",label:"IA14 — R&M: Langit-langit, Lampu, Ventilasi Dining",cat:"S",pts:0,groupParent:"IA1"},
+  {code:"IA15.1",section:"IA",label:"IA15 — Cleanliness: Tempat Sampah Dining",cat:"S",pts:0,groupParent:"IA1"},
+  {code:"IA15.2",section:"IA",label:"IA15 — R&M: Tempat Sampah Dining",cat:"S",pts:0,groupParent:"IA1"},
+  {code:"IA16.1",section:"IA",label:"IA16 — Cleanliness: Atmosfer Ruangan Dining",cat:"S",pts:0,groupParent:"IA1"},
+  {code:"IA16.2",section:"IA",label:"IA16 — R&M: Atmosfer Ruangan Dining",cat:"S",pts:0,groupParent:"IA1"},
+  {code:"IA21.1",section:"IA",label:"IA21 — Cleanliness: Aroma Toilet",cat:"S",pts:0,groupParent:"IA2"},
+  {code:"IA22.1",section:"IA",label:"IA22 — Cleanliness: Pintu, Dinding, Lantai Toilet",cat:"S",pts:0,groupParent:"IA2"},
+  {code:"IA22.2",section:"IA",label:"IA22 — R&M: Pintu, Dinding, Lantai Toilet",cat:"S",pts:0,groupParent:"IA2"},
+  {code:"IA23.1",section:"IA",label:"IA23 — Cleanliness: Kloset, Wastafel, Perlengkapan, Cermin",cat:"S",pts:0,groupParent:"IA2"},
+  {code:"IA23.2",section:"IA",label:"IA23 — R&M: Kloset, Wastafel, Perlengkapan, Cermin",cat:"S",pts:0,groupParent:"IA2"},
+  {code:"IA24.1",section:"IA",label:"IA24 — Cleanliness: Langit-langit, Lampu, Ventilasi Toilet",cat:"S",pts:0,groupParent:"IA2"},
+  {code:"IA24.2",section:"IA",label:"IA24 — R&M: Langit-langit, Lampu, Ventilasi Toilet",cat:"S",pts:0,groupParent:"IA2"},
+  {code:"IA25.1",section:"IA",label:"IA25 — R&M: Stok Bahan Pembersih",cat:"S",pts:0,groupParent:"IA2"},
+  {code:"IA31.1",section:"IA",label:"IA31 — Cleanliness: Dinding dan Lantai Area Kerja",cat:"S",pts:0,groupParent:"IA3"},
+  {code:"IA31.2",section:"IA",label:"IA31 — R&M: Dinding dan Lantai Area Kerja",cat:"S",pts:0,groupParent:"IA3"},
+  {code:"IA32.1",section:"IA",label:"IA32 — Cleanliness: Langit-langit, Lampu, Ventilasi Area Kerja",cat:"S",pts:0,groupParent:"IA3"},
+  {code:"IA32.2",section:"IA",label:"IA32 — R&M: Langit-langit, Lampu, Ventilasi Area Kerja",cat:"S",pts:0,groupParent:"IA3"},
+  {code:"IA33.1",section:"IA",label:"IA33 — Cleanliness: Meja, Rak, dan Laci Penyimpanan",cat:"S",pts:0,groupParent:"IA3"},
+  {code:"IA33.2",section:"IA",label:"IA33 — R&M: Meja, Rak, dan Laci Penyimpanan",cat:"S",pts:0,groupParent:"IA3"},
+  {code:"IA34.1",section:"IA",label:"IA34 — Cleanliness: Sink, Wastafel, Grease Trap, Perpipaan",cat:"S",pts:0,groupParent:"IA3"},
+  {code:"IA34.2",section:"IA",label:"IA34 — R&M: Sink, Wastafel, Grease Trap, Perpipaan",cat:"S",pts:0,groupParent:"IA3"},
+  {code:"IA35.1",section:"IA",label:"IA35 — Cleanliness: Tempat Sampah Area Kerja",cat:"S",pts:0,groupParent:"IA3"},
+  {code:"IA35.2",section:"IA",label:"IA35 — R&M: Tempat Sampah Area Kerja",cat:"S",pts:0,groupParent:"IA3"},
+  {code:"IA41.1",section:"IA",label:"IA41 — Cleanliness: Chiller dan Freezer",cat:"S",pts:0,groupParent:"IA4"},
+  {code:"IA41.2",section:"IA",label:"IA41 — R&M: Chiller dan Freezer",cat:"S",pts:0,groupParent:"IA4"},
+  {code:"IA42.1",section:"IA",label:"IA42 — Cleanliness: Big Equipment",cat:"S",pts:0,groupParent:"IA4"},
+  {code:"IA42.2",section:"IA",label:"IA42 — R&M: Big Equipment",cat:"S",pts:0,groupParent:"IA4"},
+  {code:"IA43.1",section:"IA",label:"IA43 — Cleanliness: Small Equipment",cat:"S",pts:0,groupParent:"IA4"},
+  {code:"IA43.2",section:"IA",label:"IA43 — R&M: Small Equipment",cat:"S",pts:0,groupParent:"IA4"},
+  {code:"IA44.1",section:"IA",label:"IA44 — Cleanliness: Display Product",cat:"S",pts:0,groupParent:"IA4"},
+  {code:"IA44.2",section:"IA",label:"IA44 — R&M: Display Product",cat:"S",pts:0,groupParent:"IA4"},
+  {code:"IA45.1",section:"IA",label:"IA45 — Cleanliness: Utensils",cat:"S",pts:0,groupParent:"IA4"},
+  {code:"IA45.2",section:"IA",label:"IA45 — R&M: Utensils",cat:"S",pts:0,groupParent:"IA4"},
+  {code:"FQ11.1",section:"FQ",label:"Pesanan konsumen disajikan dengan akurat",cat:"N",pts:1,groupParent:null},
+  {code:"FQ11.2",section:"FQ",label:"Makanan yang disajikan memenuhi standar kualitas",cat:"N",pts:1,groupParent:null},
+  {code:"FQ11.3",section:"FQ",label:"Minuman yang disajikan memenuhi standar kualitas",cat:"N",pts:1,groupParent:null},
+  {code:"FQ12.1",section:"FQ",label:"Makanan dibuat sesuai dengan SOP",cat:"S",pts:2,groupParent:null},
+  {code:"FQ12.2",section:"FQ",label:"Minuman dibuat sesuai dengan SOP",cat:"S",pts:2,groupParent:null},
+  {code:"FQ12.3",section:"FQ",label:"Topping & Condiments dibuat sesuai dengan SOP",cat:"S",pts:2,groupParent:null},
+  {code:"FQ12.4",section:"FQ",label:"Bahan setengah jadi dibuat sesuai dengan SOP",cat:"S",pts:2,groupParent:null},
+  {code:"FQ12.5",section:"FQ",label:"Sistem Manajemen Produk dijalankan sesuai SOP",cat:"C",pts:4,groupParent:null},
+  {code:"FQ13.1",section:"FQ",label:"Tidak ada pangan kadaluarsa yang disimpan",cat:"S",pts:2,groupParent:null},
+  {code:"FQ13.2",section:"FQ",label:"Bahan baku disimpan sesuai dengan SOP",cat:"N",pts:1,groupParent:null},
+  {code:"FQ13.3",section:"FQ",label:"Kemasan disimpan sesuai dengan SOP",cat:"N",pts:1,groupParent:null},
+  {code:"FQ13.4",section:"FQ",label:"Bahan setengah jadi disimpan sesuai dengan SOP",cat:"S",pts:2,groupParent:null},
+  {code:"FQ13.5",section:"FQ",label:"Produk, Topping, dan Condiments disimpan sesuai dengan SOP",cat:"S",pts:2,groupParent:null},
+  {code:"FQ14.1",section:"FQ",label:"Air minum yang digunakan sesuai dengan SOP",cat:"S",pts:2,groupParent:null},
+  {code:"FQ14.2",section:"FQ",label:"Jenis bahan baku sesuai dengan SOP",cat:"C",pts:4,groupParent:null},
+  {code:"FQ14.3",section:"FQ",label:"Jenis kemasan sesuai dengan SOP",cat:"C",pts:4,groupParent:null},
+  {code:"TR11.1",section:"TR",label:"Sistem pelatihan terpusat terlaksana dan terbarukan",cat:"C",pts:4,groupParent:null},
+  {code:"TR11.2",section:"TR",label:"Crew telah mengikuti pelatihan dari Manajemen",cat:"S",pts:2,groupParent:null},
+  {code:"TR11.3",section:"TR",label:"Kebun menjalankan sistem dokumentasi pelatihan & pembinaan",cat:"N",pts:1,groupParent:null},
+  {code:"GM11.1",section:"GM",label:"Rambu, petunjuk, form operasional Kebun diimplementasikan",cat:"N",pts:1,groupParent:null},
+  {code:"GM12.1",section:"GM",label:"Sistem rekapitulasi penjualan sesuai arahan Manajemen",cat:"C",pts:4,groupParent:null},
+  {code:"GM12.2",section:"GM",label:"Data penjualan sesuai dengan SOP",cat:"VC",pts:100,groupParent:null},
+  {code:"GM13.1",section:"GM",label:"Menerapkan pajak sesuai aturan pemerintah",cat:"C",pts:4,groupParent:null},
+  {code:"GM13.2",section:"GM",label:"Patuh pada regulasi umum F&B sesuai aturan pemerintah",cat:"C",pts:4,groupParent:null},
+  {code:"GM14.1",section:"GM",label:"Bekerja sama penuh dalam memberikan dokumen dan data audit",cat:"S",pts:2,groupParent:null},
+  {code:"GM14.2",section:"GM",label:"Lokasi Kebun sesuai dengan SOP",cat:"VC",pts:100,groupParent:null},
+  {code:"GM14.3",section:"GM",label:"Tidak ada PKS dengan pihak ketiga di luar SOP",cat:"C",pts:4,groupParent:null},
+  {code:"GM15.1",section:"GM",label:"Prosedur dan peralatan K3 diimplementasi dan dipelihara sesuai SOP",cat:"N",pts:1,groupParent:null},
+  {code:"GM15.2",section:"GM",label:"Safety sign terpasang pada tempat yang berpotensi bahaya",cat:"N",pts:1,groupParent:null},
+  {code:"GM15.3",section:"GM",label:"CCTV & Wi-Fi terpasang dan berfungsi pada area Kebun",cat:"N",pts:1,groupParent:null},
+  {code:"GM15.4",section:"GM",label:"Risiko bahaya lain tidak ditemukan",cat:"N",pts:1,groupParent:null},
+  {code:"FS11.1",section:"FS",label:"SOP cuci tangan diikuti dengan benar",cat:"S",pts:10,groupParent:null},
+  {code:"FS11.2",section:"FS",label:"Air bersih dan panas tersedia sesuai SOP",cat:"S",pts:10,groupParent:null},
+  {code:"FS11.3",section:"FS",label:"Grease trap dan sistem perpipaan berfungsi dengan baik",cat:"N",pts:5,groupParent:null},
+  {code:"FS11.4",section:"FS",label:"Pengecekan kualitas pangan dengan temperatur sesuai SOP",cat:"S",pts:10,groupParent:null},
+  {code:"FS11.5",section:"FS",label:"Alat pembersih disimpan, dirawat, ditandai, dan digunakan sesuai SOP",cat:"N",pts:5,groupParent:null},
+  {code:"FS11.6",section:"FS",label:"Bahan pembersih tersedia, disimpan, ditandai, dan digunakan sesuai SOP",cat:"N",pts:5,groupParent:null},
+  {code:"FS11.7",section:"FS",label:"Equipment disanitasi sesuai dengan SOP",cat:"S",pts:10,groupParent:null},
+  {code:"FS11.8",section:"FS",label:"Kebun menggunakan seluruh barang/bahan yang disetujui Manajemen",cat:"C",pts:100,groupParent:null},
+  {code:"FS11.9",section:"FS",label:"Produk & bahan setengah jadi diberi label umur simpan & tidak kadaluarsa",cat:"S",pts:10,groupParent:null},
+  {code:"FS11.10",section:"FS",label:"Tidak ada bukti dan potensi kontaminasi silang",cat:"S",pts:10,groupParent:null},
+  {code:"FS11.11",section:"FS",label:"Terdapat implementasi pest control yang efektif di Kebun",cat:"S",pts:10,groupParent:null},
+  {code:"FS11.12",section:"FS",label:"Tidak ada pelanggaran keamanan pangan lainnya",cat:"N",pts:5,groupParent:null}
+];
+const SECTION_LABELS = {
+  HS:"Hospitality", SS:"Speed of Service", PS:"Profitability & Shift Management",
+  EA:"Exterior Appearance", IA:"Interior Appearance", FQ:"Food Quality",
+  TR:"Training", GM:"General Management", FS:"Food Safety"
+};
+
+// ── GROUPING INFO ────────────────────────────────────────────
+// Warna beda per grouping (khusus Interior Appearance yang punya 4
+// grouping berurutan) supaya auditor nggak bingung pas scroll dari 1
+// grouping ke grouping lain. EA cuma 1 grouping tunggal di section-nya
+// jadi tetap amber — aman, nggak ada risiko ketuker.
+const GROUP_INFO = {
+  EA : { label: "Exterior Appearance", color: "#D97706", bg: "rgba(217,119,6,.05)"  }, // amber
+  IA1: { label: "Dining Area",         color: "#D97706", bg: "rgba(217,119,6,.05)"  }, // amber
+  IA2: { label: "Toilet",              color: "#2563EB", bg: "rgba(37,99,235,.05)"  }, // biru
+  IA3: { label: "Area Kerja & Gudang", color: "#0D9488", bg: "rgba(13,148,136,.06)" }, // teal
+  IA4: { label: "Equipment",           color: "#7C3AED", bg: "rgba(124,58,237,.05)" }  // ungu
+};
+
+// ── STATE ────────────────────────────────────────────────────
+let auditInfo      = {};
+let auditItems     = {};
+let currentSectionIdx = 0;
+const SECTION_KEYS = Object.keys(SECTION_LABELS);
+const STORAGE_KEY  = 'audit_sai_progress';
+
+// Inisialisasi semua item default = comply:true
+ITEMS.forEach(i => { auditItems[i.code] = { comply: true, catatan: '', fotoUrl: '' }; });
+
+// ── AUTO-SAVE & RESTORE ───────────────────────────────────────
+function saveProgress() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      auditInfo, auditItems, currentSectionIdx,
+      savedAt: new Date().toISOString()
+    }));
+  } catch(e) { /* ignore storage errors */ }
+}
+
+function loadProgress() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch(e) { return null; }
+}
+
+function clearProgress() {
+  try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
+}
+
+function timeSince(isoStr) {
+  const mins = Math.round((Date.now() - new Date(isoStr)) / 60000);
+  if (mins < 1)  return 'baru saja';
+  if (mins < 60) return mins + ' menit lalu';
+  return Math.round(mins/60) + ' jam lalu';
+}
+
+
+// ── SIGNATURE PAD ────────────────────────────────────────────
+var sigState   = { auditor: false, pic: false };
+var _sigCtx    = {};
+var _sigDown   = {};
+var _sigLast   = {};
+
+function _attachSigPad(id) {
+  var canvas = document.getElementById('canvas-' + id);
+  if (!canvas) return;
+
+  var ctx = canvas.getContext('2d');
+  _sigCtx[id]  = ctx;
+  _sigDown[id] = false;
+  _sigLast[id] = { x:0, y:0 };
+
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.strokeStyle = '#0B2545';
+  ctx.lineWidth   = 3;
+  ctx.lineCap     = 'round';
+  ctx.lineJoin    = 'round';
+
+  function getPos(e) {
+    var r   = canvas.getBoundingClientRect();
+    var src = e.touches ? e.touches[0] : e;
+    return {
+      x: (src.clientX - r.left) / r.width  * canvas.width,
+      y: (src.clientY - r.top)  / r.height * canvas.height
+    };
+  }
+
+  canvas.onmousedown  = function(e) {
+    _sigDown[id] = true;
+    var p = getPos(e); _sigLast[id] = p;
+  };
+  canvas.onmousemove  = function(e) {
+    if (!_sigDown[id]) return;
+    var p = getPos(e);
+    _sigCtx[id].beginPath();
+    _sigCtx[id].moveTo(_sigLast[id].x, _sigLast[id].y);
+    _sigCtx[id].lineTo(p.x, p.y);
+    _sigCtx[id].stroke();
+    _sigLast[id] = p;
+    _markSig(id);
+  };
+  canvas.onmouseup    = function() { _sigDown[id] = false; };
+  canvas.onmouseleave = function() { _sigDown[id] = false; };
+
+  canvas.ontouchstart = function(e) {
+    e.preventDefault(); _sigDown[id] = true;
+    var p = getPos(e); _sigLast[id] = p;
+  };
+  canvas.ontouchmove  = function(e) {
+    e.preventDefault();
+    if (!_sigDown[id]) return;
+    var p = getPos(e);
+    _sigCtx[id].beginPath();
+    _sigCtx[id].moveTo(_sigLast[id].x, _sigLast[id].y);
+    _sigCtx[id].lineTo(p.x, p.y);
+    _sigCtx[id].stroke();
+    _sigLast[id] = p;
+    _markSig(id);
+  };
+  canvas.ontouchend   = function() { _sigDown[id] = false; };
+
+}
+
+var _sigSaveTimer = {};
+function _markSig(id) {
+  sigState[id] = true;
+  var el = document.getElementById('sig-' + id + '-status');
+  if (el) el.textContent = '✅ Tanda tangan terekam';
+  clearTimeout(_sigSaveTimer[id]);
+  _sigSaveTimer[id] = setTimeout(function() {
+    try {
+      var canvas = document.getElementById('canvas-' + id);
+      if (!canvas) return;
+      var dataUrl = canvas.toDataURL('image/jpeg', 0.5);
+      if (id === 'auditor') auditInfo.draftSignAuditor = dataUrl;
+      else auditInfo.draftSignPIC = dataUrl;
+      saveProgress();
+    } catch(e) {}
+  }, 600);
+}
+
+// ── RESTORE FOTO DARI URL (untuk revisi / reload) ────────────────
+function restoreFotoFromUrl(code, url) {
+  if (!url) return;
+  var btn   = document.getElementById('foto-btn-'   + code);
+  var thumb = document.getElementById('foto-thumb-' + code);
+  var status= document.getElementById('foto-status-'+ code);
+  if (btn) {
+    btn.classList.add('uploaded');
+    btn.innerHTML = '✅ Foto Tersimpan';
+  }
+  if (thumb) {
+    var fileIdMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+    if (fileIdMatch) {
+      thumb.src = 'https://drive.google.com/thumbnail?id=' + fileIdMatch[1] + '&sz=w120';
+    } else {
+      thumb.src = url;
+    }
+    thumb.classList.add('show');
+    thumb.style.cursor = 'pointer';
+    thumb.title = 'Klik untuk buka foto di Drive';
+    thumb.onclick = function() { window.open(url, '_blank'); };
+  }
+  if (status) status.textContent = 'Tersimpan';
+}
+
+function restoreExtraFotoFromUrl(key, url) {
+  if (!url) return;
+  var btn   = document.getElementById('foto-btn-'   + key);
+  var thumb = document.getElementById('foto-thumb-' + key);
+  var status= document.getElementById('foto-status-'+ key);
+  extraPhotos[key] = url;
+  if (btn) { btn.classList.add('uploaded'); btn.innerHTML = '✅ Foto Tersimpan'; }
+  if (thumb) {
+    var fileIdMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+    if (fileIdMatch) {
+      thumb.src = 'https://drive.google.com/thumbnail?id=' + fileIdMatch[1] + '&sz=w120';
+    } else {
+      thumb.src = url;
+    }
+    thumb.classList.add('show');
+    thumb.style.cursor = 'pointer';
+    thumb.title = 'Klik untuk buka foto di Drive';
+    thumb.onclick = function(u){ return function(){ window.open(u,'_blank'); }; }(url);
+  }
+  if (status) status.textContent = 'Tersimpan';
+  var removeBtn = document.getElementById('foto-remove-' + key);
+  if (removeBtn) removeBtn.style.display = '';
+}
+
+// ── RESTORE SIGNATURE SCREEN ──────────────────────────────────────
+function restoreSignatureScreen() {
+  ['auditor','pic'].forEach(function(id) {
+    var url      = id === 'auditor' ? (auditInfo.signAuditor||'')      : (auditInfo.signPIC||'');
+    var draft    = id === 'auditor' ? (auditInfo.draftSignAuditor||'') : (auditInfo.draftSignPIC||'');
+    var statusEl = document.getElementById('sig-' + id + '-status');
+    var canvas   = document.getElementById('canvas-' + id);
+
+    if (url && url.length > 10) {
+      sigState[id] = true;
+      delete _sigCtx[id];
+
+      if (statusEl) statusEl.innerHTML =
+        '✅ TTD tersimpan &nbsp;|&nbsp; <a href="' + url + '" target="_blank" style="color:#0B2545;font-size:11px;">Lihat TTD sebelumnya</a>'
+        + ' &nbsp;|&nbsp; <span style="font-size:11px;color:#666;">Klik Ulangi jika mau TTD ulang</span>';
+
+      if (canvas) {
+        var m = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+        if (m) {
+          var previewUrl = 'https://lh3.googleusercontent.com/d/' + m[1] + '=w300';
+          var img = new Image();
+          img.onload = function() {
+            var ctx2 = canvas.getContext('2d');
+            ctx2.fillStyle = '#FFFFFF';
+            ctx2.fillRect(0, 0, canvas.width, canvas.height);
+            var s = Math.min(canvas.width/this.width, canvas.height/this.height);
+            ctx2.drawImage(this, (canvas.width-this.width*s)/2, (canvas.height-this.height*s)/2, this.width*s, this.height*s);
+          };
+          img.src = previewUrl;
+        }
+      }
+    } else if (draft && draft.length > 10) {
+      sigState[id] = true;
+      if (statusEl) statusEl.textContent = '✅ Tanda tangan terekam (draft dipulihkan)';
+      if (canvas) {
+        var ctx3 = canvas.getContext('2d');
+        var img2 = new Image();
+        img2.onload = function() {
+          ctx3.fillStyle = '#FFFFFF';
+          ctx3.fillRect(0, 0, canvas.width, canvas.height);
+          ctx3.drawImage(img2, 0, 0, canvas.width, canvas.height);
+        };
+        img2.src = draft;
+      }
+    }
+  });
+
+  var fb = auditInfo.fotoBersama  || extraPhotos.bersama  || '';
+  var cb = auditInfo.fotoCommBook || extraPhotos.commbook || '';
+  if (fb) { extraPhotos.bersama  = fb; restoreExtraFotoFromUrl('bersama',  fb); }
+  if (cb) { extraPhotos.commbook = cb; restoreExtraFotoFromUrl('commbook', cb); }
+
+  function fillPIC() {
+    var picNamaEl = document.getElementById('f-pic-nama');
+    var picJabEl  = document.getElementById('f-pic-jabatan');
+    if (picNamaEl && auditInfo.namaPIC)    picNamaEl.value = auditInfo.namaPIC;
+    if (picJabEl  && auditInfo.jabatanPIC) picJabEl.value  = auditInfo.jabatanPIC;
+  }
+  fillPIC();
+  setTimeout(fillPIC, 200);
+}
+
+_attachSigPad('auditor');
+_attachSigPad('pic');
+
+function clearSig(id) {
+  var canvas = document.getElementById('canvas-' + id);
+  if (!canvas) return;
+  var w = canvas.width, h = canvas.height;
+  canvas.width = w;
+  var ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(0, 0, w, h);
+  ctx.strokeStyle = '#0B2545';
+  ctx.lineWidth   = 3;
+  ctx.lineCap     = 'round';
+  ctx.lineJoin    = 'round';
+  _sigCtx[id]  = ctx;
+  _sigDown[id] = false;
+  sigState[id] = false;
+  if (id === 'auditor') { auditInfo.draftSignAuditor = ''; auditInfo.signAuditor = ''; }
+  else                  { auditInfo.draftSignPIC     = ''; auditInfo.signPIC     = ''; }
+  saveProgress();
+  var el = document.getElementById('sig-' + id + '-status');
+  if (el) el.textContent = '';
+}
+
+document.addEventListener('click', function(e) {
+  var t = e.target;
+  if (!t) return;
+  if (t.id === 'btn-ulangi-auditor' || (t.closest && t.closest('#btn-ulangi-auditor'))) {
+    clearSig('auditor');
+  } else if (t.id === 'btn-ulangi-pic' || (t.closest && t.closest('#btn-ulangi-pic'))) {
+    clearSig('pic');
+  }
+});
+
+function getSigDataURL(id) {
+  var canvas = document.getElementById('canvas-' + id);
+  if (!canvas || !sigState[id]) return '';
+  return canvas.toDataURL('image/jpeg', 0.5);
+}
+
+function resizeCanvas(id) {}
+function initSigPad(id)   {}
+
+function showSignatureScreen() {
+  showScreen('screen-signature');
+  currentSectionIdx = SECTION_KEYS.length;
+  saveProgress();
+  requestAnimationFrame(function() {
+    requestAnimationFrame(function() {
+      restoreSignatureScreen();
+    });
+  });
+}
+
+// ── EXTRA PHOTOS (foto bersama & communication book) ────────────
+var extraPhotos = { bersama: '', commbook: '' };
+
+async function handleExtraPhoto(event, key) {
+  var file = event.target.files[0];
+  if (!file) return;
+  var btn      = document.getElementById('foto-btn-' + key);
+  var thumb    = document.getElementById('foto-thumb-' + key);
+  var status   = document.getElementById('foto-status-' + key);
+  var removeBtn= document.getElementById('foto-remove-' + key);
+  var isVideo  = file.type.startsWith('video/');
+
+  if (btn) { btn.classList.add('uploading'); btn.innerHTML = '⏳ Mengupload...'; }
+  if (status) status.textContent = 'Mengupload...';
+
+  try {
+    var dataUrl, fileName;
+    if (isVideo) {
+      dataUrl  = await fileToBase64(file);
+      var ext  = (file.name.split('.').pop() || 'mp4').toLowerCase();
+      fileName = key + '_' + Date.now() + '.' + ext;
+      if (thumb) { thumb.src = ''; thumb.classList.remove('show'); }
+    } else {
+      dataUrl  = await compressImage(file);
+      fileName = key + '_' + Date.now() + '.jpg';
+      if (thumb) { thumb.src = dataUrl; thumb.classList.add('show'); }
+    }
+
+    var tanggal = auditInfo.tanggalAudit || new Date().toISOString().split('T')[0];
+
+    var result = await postJSON(APPS_SCRIPT_URL, {
+      action: 'upload_photo', base64Data: dataUrl,
+      fileName: fileName, nomorOutlet: auditInfo.nomorOutlet || 'doc', tanggal: tanggal
+    }, isVideo ? 180000 : 60000);
+
+    if (result.success) {
+      extraPhotos[key] = result.url;
+      auditInfo.fotoBersama  = extraPhotos.bersama;
+      auditInfo.fotoCommBook = extraPhotos.commbook;
+      saveProgress();
+      if (btn) { btn.classList.remove('uploading'); btn.classList.add('uploaded'); btn.innerHTML = '✅ Foto Tersimpan'; }
+      if (status) status.textContent = 'Tersimpan';
+      if (removeBtn) removeBtn.style.display = '';
+    } else { throw new Error(result.message); }
+  } catch(e) {
+    if (btn) { btn.classList.remove('uploading'); btn.innerHTML = '⚠️ Coba Lagi'; }
+    if (status) status.textContent = e.name === 'AbortError'
+      ? 'Timeout — koneksi terlalu lama, coba lagi'
+      : 'Gagal upload: ' + (e.message || '').substring(0, 80);
+  } finally {
+    event.target.value = '';
+  }
+}
+
+function removeExtraFoto(key) {
+  extraPhotos[key] = '';
+  if (key === 'bersama') auditInfo.fotoBersama = '';
+  if (key === 'commbook') auditInfo.fotoCommBook = '';
+  var btn      = document.getElementById('foto-btn-' + key);
+  var thumb    = document.getElementById('foto-thumb-' + key);
+  var status   = document.getElementById('foto-status-' + key);
+  var removeBtn= document.getElementById('foto-remove-' + key);
+  if (btn) { btn.classList.remove('uploaded'); btn.innerHTML = '📷 Kamera'; }
+  if (thumb) { thumb.src = ''; thumb.classList.remove('show'); }
+  if (status) status.textContent = '';
+  if (removeBtn) removeBtn.style.display = 'none';
+  saveProgress();
+}
+
+async function submitSignatures() {
+  var picNama    = document.getElementById('f-pic-nama').value.trim();
+  var picJabatan = document.getElementById('f-pic-jabatan').value.trim();
+  if (!picNama)    { showError('Nama PIC Outlet wajib diisi!');    document.getElementById('f-pic-nama').focus();    return; }
+  if (!picJabatan) { showError('Jabatan PIC Outlet wajib diisi!'); document.getElementById('f-pic-jabatan').focus(); return; }
+  if (!sigState['auditor']) { showError('Tanda tangan Auditor wajib diisi!'); return; }
+  if (!sigState['pic'])     { showError('Tanda tangan PIC Outlet wajib diisi!'); return; }
+  if (!extraPhotos.bersama)  { showError('Foto Bersama Auditor & Auditee wajib diupload!');  return; }
+  if (!extraPhotos.commbook) { showError('Foto Communication Book wajib diupload!'); return; }
+
+  auditInfo.namaPIC      = picNama;
+  auditInfo.jabatanPIC   = picJabatan;
+  auditInfo.fotoBersama  = extraPhotos.bersama;
+  auditInfo.fotoCommBook = extraPhotos.commbook;
+
+  var tanggal = auditInfo.tanggalAudit || new Date().toISOString().split('T')[0];
+
+  async function uploadSig(id) {
+    var existingUrl = id === 'auditor' ? auditInfo.signAuditor : auditInfo.signPIC;
+    if (existingUrl && existingUrl.startsWith('http') && sigState[id] && !_sigCtx[id]) {
+      return existingUrl;
+    }
+    var dataUrl = getSigDataURL(id);
+    if (!dataUrl) return existingUrl || '';
+    try {
+      var result = await postJSON(APPS_SCRIPT_URL, {
+        action: 'upload_photo',
+        base64Data: dataUrl,
+        fileName: 'signature_' + id + '_' + Date.now() + '.jpg',
+        nomorOutlet: auditInfo.nomorOutlet || 'sig',
+        tanggal: tanggal
+      }, 60000);
+      return result.success ? result.url : dataUrl;
+    } catch(e) {
+      return dataUrl;
+    }
+  }
+
+  var btn = document.querySelector('#screen-signature .btn-primary');
+  if (btn) { btn.disabled = true; btn.textContent = 'Mengupload TTD...'; }
+
+  try {
+    auditInfo.signAuditor = await uploadSig('auditor');
+    auditInfo.signPIC     = await uploadSig('pic');
+    auditInfo.draftSignAuditor = '';
+    auditInfo.draftSignPIC     = '';
+    saveProgress();
+    showReview();
+  } catch(e) {
+    showError('Gagal memproses tanda tangan: ' + e.message + ' — coba lagi.');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Lanjut Review →'; }
+  }
+}
+
+// ── SCREEN HELPERS ───────────────────────────────────────────
+function showError(msg) {
+  var existing = document.getElementById('error-toast');
+  if (existing) existing.remove();
+  var toast = document.createElement('div');
+  toast.id = 'error-toast';
+  toast.style.cssText = 'position:fixed;top:12px;left:50%;transform:translateX(-50%);'
+    + 'background:#CC0000;color:#fff;padding:12px 20px;border-radius:8px;z-index:99999;'
+    + 'max-width:90%;text-align:center;font-size:14px;font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,.3);';
+  toast.textContent = '⚠️ ' + msg;
+  document.body.appendChild(toast);
+  setTimeout(function(){ if (toast.parentNode) toast.remove(); }, 5000);
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById(id);
+  if (el) { el.classList.add('active'); el.scrollTop = 0; window.scrollTo(0,0); }
+}
+
+// ── SPLASH → INFO ────────────────────────────────────────────
+function startForm() {
+  const saved = loadProgress();
+  if (saved && saved.auditInfo && saved.auditInfo.nomorOutlet) {
+    const t = timeSince(saved.savedAt);
+    const banner = document.createElement('div');
+    banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#0B2545;color:#fff;' +
+      'padding:16px 20px;z-index:9999;text-align:center;';
+    banner.innerHTML =
+      '<div style="font-weight:700;margin-bottom:6px;">Ada progress tersimpan (' + t + ')</div>' +
+      '<div style="font-size:13px;opacity:.8;margin-bottom:12px;">Outlet: ' + saved.auditInfo.nomorOutlet + '</div>' +
+      '<div style="display:flex;gap:8px;justify-content:center;">' +
+      '<button onclick="restoreProgress()" style="background:#4F86C6;border:none;color:#fff;' +
+        'padding:10px 20px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;">Lanjutkan</button>' +
+      '<button onclick="discardProgress()" style="background:rgba(255,255,255,.2);border:none;color:#fff;' +
+        'padding:10px 20px;border-radius:8px;font-weight:600;font-size:14px;cursor:pointer;">Mulai Baru</button>' +
+      '</div>';
+    document.body.appendChild(banner);
+    window._restoreBanner = banner;
+    return;
+  }
+  _startFresh();
+}
+
+function _startFresh() {
+  const d = new Date();
+  document.getElementById('f-tanggal').value = d.toISOString().split('T')[0];
+  showScreen('screen-info');
+}
+
+function restoreProgress() {
+  const saved = loadProgress();
+  if (!saved) return;
+  if (window._restoreBanner) { window._restoreBanner.remove(); }
+  auditInfo = saved.auditInfo;
+  auditItems = saved.auditItems;
+  currentSectionIdx = saved.currentSectionIdx || 0;
+  extraPhotos = {
+    bersama : (auditInfo && auditInfo.fotoBersama)  || '',
+    commbook: (auditInfo && auditInfo.fotoCommBook) || ''
+  };
+  buildSectionScreens();
+  restoreItemVisuals();
+  ITEMS.forEach(function(item) {
+    var resp = auditItems[item.code];
+    if (resp && resp.fotoUrl) restoreFotoFromUrl(item.code, resp.fotoUrl);
+  });
+  fillInfoFields();
+  if (currentSectionIdx >= SECTION_KEYS.length) {
+    showSignatureScreen();
+  } else {
+    restoreSignatureScreen();
+    goToSection(currentSectionIdx);
+  }
+}
+
+function discardProgress() {
+  clearProgress();
+  if (window._restoreBanner) { window._restoreBanner.remove(); }
+  ITEMS.forEach(i => { auditItems[i.code] = { comply: true, catatan: '', fotoUrl: '' }; });
+  _startFresh();
+}
+
+// ── INFO SUBMIT ───────────────────────────────────────────────
+function submitInfo() {
+  const outlet      = document.getElementById('f-outlet').value.trim();
+  const namaOutlet  = document.getElementById('f-nama-outlet').value.trim();
+  const alamat      = document.getElementById('f-alamat').value.trim();
+  const auditor     = document.getElementById('f-auditor').value.trim();
+  const tanggal  = document.getElementById('f-tanggal').value;
+  const posisi   = document.getElementById('f-posisi').value.trim();
+  const kategori = document.getElementById('f-kategori').value;
+  const status   = document.getElementById('f-status').value;
+  const email    = document.getElementById('f-email').value.trim();
+
+  if (!outlet)      { showError('Nomor Outlet wajib diisi!');    document.getElementById('f-outlet').focus();      return; }
+  if (!namaOutlet)  { showError('Nama Outlet wajib diisi!');     document.getElementById('f-nama-outlet').focus(); return; }
+  if (!alamat)      { showError('Alamat Kebun wajib diisi!');     document.getElementById('f-alamat').focus();      return; }
+  if (!auditor)     { showError('Nama Auditor wajib diisi!');     document.getElementById('f-auditor').focus();     return; }
+  if (!tanggal)     { showError('Tanggal Audit wajib diisi!');    document.getElementById('f-tanggal').focus();     return; }
+  if (!posisi)      { showError('Posisi Auditor wajib diisi!');   document.getElementById('f-posisi').focus();      return; }
+  if (!kategori)    { showError('Kategori Audit wajib dipilih!'); document.getElementById('f-kategori').focus();   return; }
+  if (!status)      { showError('Status Kebun wajib dipilih!');   document.getElementById('f-status').focus();      return; }
+  if (!email || !email.includes('@')) { alert('Format email tidak valid!'); return; }
+
+  Object.assign(auditInfo, { nomorOutlet:outlet, namaOutlet:namaOutlet, alamatKebun:alamat,
+                namaAuditor:auditor, tanggalAudit:tanggal,
+                posisiAuditor:posisi, kategoriAudit:kategori, statusKebun:status, emailPIC:email });
+  saveProgress();
+
+  buildSectionScreens();
+  restoreItemVisuals();
+  goToSection(0);
+}
+
+// ── RESTORE ITEM VISUALS (sync tampilan dengan auditItems) ──────
+function restoreItemVisuals() {
+  ITEMS.forEach(function(item) {
+    var resp = auditItems[item.code];
+    if (!resp) return;
+
+    if (resp.comply === false) {
+      var card   = document.getElementById('card-'     + item.code);
+      var btnYa  = document.getElementById('btn-ya-'   + item.code);
+      var btnTdk = document.getElementById('btn-tidak-' + item.code);
+      var catEl  = document.getElementById('cat-'      + item.code);
+      if (btnYa) {
+        btnYa.classList.remove('selected');
+        btnTdk.classList.add('selected');
+        if (card)  card.className = 'item-card noncomply';
+        if (catEl) { catEl.classList.remove('hidden'); catEl.value = resp.catatan || ''; }
+      }
+    }
+
+    if (resp.fotoUrls && resp.fotoUrls.length) {
+      renderItemThumbs(item.code);
+      var status = document.getElementById('foto-status-' + item.code);
+      var total  = resp.fotoUrls.length;
+      if (status) status.textContent = total + '/3 file di Drive' + (total < 3 ? ' (bisa tambah lagi)' : '');
+      var uploadLabels = document.querySelectorAll(
+        'label[for="foto-cam-' + item.code + '"], label[for="foto-input-' + item.code + '"]');
+      uploadLabels.forEach(function(l){ l.classList.add('uploaded'); l.style.borderStyle = 'solid'; });
+    }
+  });
+}
+
+// ── FILL INFO FIELDS (dari auditInfo ke DOM) ─────────────────────
+function fillInfoFields() {
+  var map = {
+    'f-outlet'     : 'nomorOutlet',
+    'f-nama-outlet': 'namaOutlet',
+    'f-alamat'     : 'alamatKebun',
+    'f-auditor'    : 'namaAuditor',
+    'f-tanggal'    : 'tanggalAudit',
+    'f-posisi'     : 'posisiAuditor',
+    'f-email'      : 'emailPIC',
+  };
+  Object.keys(map).forEach(function(elId) {
+    var el = document.getElementById(elId);
+    var val = auditInfo[map[elId]];
+    if (el && val) el.value = val;
+  });
+  var katEl = document.getElementById('f-kategori');
+  var stEl  = document.getElementById('f-status');
+  if (katEl && auditInfo.kategoriAudit) katEl.value = auditInfo.kategoriAudit;
+  if (stEl  && auditInfo.statusKebun)   stEl.value  = auditInfo.statusKebun;
+}
+
+// ── BUILD SECTION SCREENS ─────────────────────────────────────
+function buildSectionScreens() {
+  const container = document.getElementById('screen-sections');
+  container.innerHTML = '';
+
+  SECTION_KEYS.forEach((secKey, secIdx) => {
+    const sectionItems = ITEMS.filter(i => i.section === secKey);
+    const div = document.createElement('div');
+    div.id = 'screen-sec-' + secKey;
+    div.className = 'screen';
+
+    const pct = Math.round(((secIdx + 1) / (SECTION_KEYS.length + 1)) * 100);
+    const isLast = secIdx === SECTION_KEYS.length - 1;
+
+    div.innerHTML = `
+      <div class="topbar">
+        <div class="topbar-row">
+          <div class="topbar-left">
+            <img class="topbar-logo" src="${LOGO_DATA_URI}" alt="Esteh Specialtea">
+            <div>
+              <div class="topbar-title">SECTION ${secIdx+1} — ${secKey}</div>
+              <div class="topbar-sub">${SECTION_LABELS[secKey]}</div>
+            </div>
+          </div>
+          <div class="step-badge">${secIdx+1} / ${SECTION_KEYS.length}</div>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+      </div>
+      <div class="content" id="content-${secKey}">
+        <div class="section-card">
+          <div class="section-card-name">${SECTION_LABELS[secKey]}</div>
+          <div class="section-card-sub">${sectionItems.length} item checklist · Tap ✅/❌ per item</div>
+        </div>
+        ${buildSectionItemsHTML(sectionItems)}
+      </div>
+      <div class="bottom-nav">
+        <button class="btn-primary" onclick="nextSection(${secIdx})">${isLast ? 'Review & Submit →' : 'Selanjutnya →'}</button>
+        <button class="btn-secondary" onclick="${secIdx===0 ? "showScreen('screen-info')" : 'goToSection('+(secIdx-1)+')'}">← Kembali</button>
+      </div>`;
+
+    container.appendChild(div);
+  });
+}
+
+function buildSectionItemsHTML(sectionItems) {
+  let html = '';
+  let currentGroup = null;
+
+  sectionItems.forEach(item => {
+    if (item.groupParent !== currentGroup) {
+      if (currentGroup) html += '</div>';
+      currentGroup = item.groupParent;
+      if (currentGroup) {
+        const info = GROUP_INFO[currentGroup] || { label: currentGroup, color: '#D97706', bg: 'rgba(217,119,6,.05)' };
+        html += `
+          <div class="group-wrapper" style="--group-color:${info.color};--group-bg:${info.bg};">
+            <div class="group-header">
+              <span class="group-header-title">📦 Grouping: ${info.label}</span>
+              <span class="group-header-note">Poin di kategori ini berkurang HANYA jika SEMUA item di bawah dijawab "Tidak"</span>
+            </div>`;
+      }
+    }
+    html += buildItemHTML(item);
+  });
+  if (currentGroup) html += '</div>';
+
+  return html;
+}
+
+function buildItemHTML(item) {
+  const catLabels  = { N:'Normal', S:'Serious', C:'Critical', VC:'V.Critical', FS:'Food Safety' };
+  return `
+  <div class="item-card comply" id="card-${item.code}">
+    <div class="item-header">
+      <span class="item-code">${item.code}</span>
+      <span class="item-cat cat-${item.cat}">${catLabels[item.cat]||item.cat}</span>
+    </div>
+    <p class="item-label">${item.label}</p>
+    <div class="answer-row">
+      <div class="answer-btn ya selected" id="btn-ya-${item.code}" onclick="setAnswer('${item.code}',true)">✅ Ya</div>
+      <div class="answer-btn tidak" id="btn-tidak-${item.code}" onclick="setAnswer('${item.code}',false)">❌ Tidak</div>
+    </div>
+    <textarea class="catatan-field hidden" id="cat-${item.code}" placeholder="📝 Catatan temuan..." rows="2"
+      oninput="auditItems['${item.code}'].catatan=this.value"></textarea>
+    <div class="foto-area" style="flex-wrap:wrap;gap:6px;">
+      <input type="file" accept="image/*,video/*" capture="environment" multiple class="foto-input"
+        id="foto-cam-${item.code}" onchange="handleFotoSelect(event,'${item.code}')">
+      <input type="file" accept="image/*,video/*" multiple class="foto-input"
+        id="foto-input-${item.code}" onchange="handleFotoSelect(event,'${item.code}')">
+      <label class="foto-btn" style="font-size:12px;padding:8px 10px;" for="foto-cam-${item.code}">📷 Kamera</label>
+      <label class="foto-btn" style="font-size:12px;padding:8px 10px;" for="foto-input-${item.code}">🖼 Galeri</label>
+      <span class="upload-status" id="foto-status-${item.code}"></span>
+      <div id="foto-thumbs-${item.code}" style="display:flex;gap:6px;flex-wrap:wrap;width:100%;margin-top:6px;"></div>
+    </div>
+  </div>`;
+}
+
+// ── ANSWER ────────────────────────────────────────────────────
+function setAnswer(code, comply) {
+  auditItems[code].comply = comply;
+  const card    = document.getElementById('card-' + code);
+  const btnYa   = document.getElementById('btn-ya-' + code);
+  const btnTdk  = document.getElementById('btn-tidak-' + code);
+  const catatan = document.getElementById('cat-' + code);
+  card.className = 'item-card ' + (comply ? 'comply' : 'noncomply');
+  btnYa .classList.toggle('selected', comply);
+  btnTdk.classList.toggle('selected', !comply);
+  catatan.classList.toggle('hidden', comply);
+  if (comply) { auditItems[code].catatan = ''; catatan.value = ''; }
+  saveProgress();
+}
+
+function renderItemThumbs(code) {
+  var container = document.getElementById('foto-thumbs-' + code);
+  if (!container) return;
+  var urls = auditItems[code].fotoUrls || [];
+  container.innerHTML = '';
+  urls.forEach(function(url, idx) {
+    var wrap = document.createElement('div');
+    wrap.style.cssText = 'position:relative;width:52px;height:52px;';
+
+    var fileIdMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+    var previewSrc  = fileIdMatch ? ('https://drive.google.com/thumbnail?id=' + fileIdMatch[1] + '&sz=w120') : url;
+
+    var thumbEl = document.createElement('img');
+    thumbEl.src = previewSrc;
+    thumbEl.alt = '';
+    thumbEl.style.cssText = 'width:52px;height:52px;object-fit:cover;border-radius:6px;border:2px solid #7FA8D9;cursor:pointer;display:block;';
+    thumbEl.title = 'Klik untuk lihat di Drive';
+    thumbEl.onclick = function(){ window.open(url, '_blank'); };
+    wrap.appendChild(thumbEl);
+
+    var delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.textContent = '×';
+    delBtn.title = 'Hapus foto/video ini';
+    delBtn.style.cssText = 'position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;'
+      + 'background:var(--red-600);color:#fff;border:2px solid #fff;font-size:13px;line-height:1;'
+      + 'cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;z-index:2;';
+    delBtn.onclick = function(e){ e.preventDefault(); e.stopPropagation(); removeFoto(code, idx); };
+    wrap.appendChild(delBtn);
+
+    container.appendChild(wrap);
+  });
+}
+
+function removeFoto(code, idx) {
+  if (!auditItems[code].fotoUrls) return;
+  auditItems[code].fotoUrls.splice(idx, 1);
+  auditItems[code].fotoUrl = auditItems[code].fotoUrls[0] || '';
+  renderItemThumbs(code);
+
+  var total  = auditItems[code].fotoUrls.length;
+  var status = document.getElementById('foto-status-' + code);
+  var uploadLabels = document.querySelectorAll(
+    'label[for="foto-cam-' + code + '"], label[for="foto-input-' + code + '"]');
+  if (total === 0) {
+    uploadLabels.forEach(function(l){ l.classList.remove('uploaded'); l.style.borderStyle = ''; });
+  }
+  if (status) status.textContent = total + '/3 file di Drive' + (total < 3 ? ' (bisa tambah lagi)' : '');
+  saveProgress();
+}
+
+// ── FOTO UPLOAD ───────────────────────────────────────────────
+async function handleFotoSelect(event, code) {
+  var files = Array.from(event.target.files);
+  if (!files.length) return;
+
+  if (!auditItems[code].fotoUrls) auditItems[code].fotoUrls = [];
+  var existing = auditItems[code].fotoUrls.length;
+  var canAdd   = Math.max(0, 3 - existing);
+  files = files.slice(0, canAdd);
+  if (files.length === 0) {
+    showError('Maksimal 3 foto/video per item. Hapus dulu yang ada jika ingin ganti.');
+    return;
+  }
+
+  var MAX_MB_IMG = 50, MAX_MB_VIDEO = 20;
+  var tooBig = files.filter(function(f){
+    var limit = f.type.startsWith('video/') ? MAX_MB_VIDEO : MAX_MB_IMG;
+    return f.size > limit * 1024 * 1024;
+  });
+  if (tooBig.length > 0) {
+    showError(tooBig.length + ' file kelewat besar (video maks ' + MAX_MB_VIDEO + 'MB, foto maks '
+      + MAX_MB_IMG + 'MB). Trim/kompres videonya dulu ya sebelum upload.');
+    files = files.filter(function(f){
+      var limit = f.type.startsWith('video/') ? MAX_MB_VIDEO : MAX_MB_IMG;
+      return f.size <= limit * 1024 * 1024;
+    });
+    if (!files.length) return;
+  }
+
+  var btn       = document.getElementById('foto-btn-' + code);
+  var status    = document.getElementById('foto-status-' + code);
+  var container = document.getElementById('foto-thumbs-' + code);
+  var tanggal   = auditInfo.tanggalAudit || new Date().toISOString().split('T')[0];
+
+  var uploadLabels = document.querySelectorAll(
+    'label[for="foto-cam-' + code + '"], label[for="foto-input-' + code + '"]');
+  uploadLabels.forEach(function(l){
+    l._origText = l.textContent;
+    l.style.opacity = '0.5';
+    l.style.pointerEvents = 'none';
+  });
+  if (status) status.textContent = 'Mengupload ' + files.length + ' file...';
+
+  var lastErrorMsg = null;
+
+  for (var i = 0; i < files.length; i++) {
+    var file    = files[i];
+    var isVideo = file.type.startsWith('video/');
+
+    var objectUrl = URL.createObjectURL(file);
+    var tempEl = null;
+    if (container) {
+      tempEl = document.createElement(isVideo ? 'video' : 'img');
+      tempEl.src = objectUrl;
+      tempEl.style.cssText = 'width:52px;height:52px;object-fit:cover;border-radius:6px;border:2px dashed #7FA8D9;opacity:.6;';
+      if (isVideo) { tempEl.muted = true; tempEl.playsInline = true; }
+      container.appendChild(tempEl);
+    }
+    var sizeInfo = ' (' + (file.size / 1024 / 1024).toFixed(1) + 'MB)';
+    if (status) status.textContent = 'Menyiapkan file ' + (i+1) + '/' + files.length + sizeInfo + '...';
+
+    try {
+      var dataUrl, fileName;
+      if (isVideo) {
+        dataUrl  = await fileToBase64(file);
+        var ext  = (file.name.split('.').pop() || 'mp4').toLowerCase();
+        fileName = code + '_' + Date.now() + '_' + i + '.' + ext;
+      } else {
+        dataUrl  = await compressImage(file);
+        fileName = code + '_' + Date.now() + '_' + i + '.jpg';
+      }
+
+      if (status) status.textContent = 'Mengupload file ' + (i+1) + '/' + files.length + sizeInfo + '...';
+      var result = await postJSON(APPS_SCRIPT_URL, {
+        action: 'upload_photo', base64Data: dataUrl, fileName: fileName,
+        nomorOutlet: auditInfo.nomorOutlet || 'doc', tanggal: tanggal
+      }, isVideo ? 180000 : 60000);
+
+      if (result.success) {
+        auditItems[code].fotoUrls.push(result.url);
+        auditItems[code].fotoUrl = auditItems[code].fotoUrls[0];
+        if (tempEl) tempEl.remove();
+        renderItemThumbs(code);
+        saveProgress();
+      } else {
+        throw new Error(result.message || 'Upload gagal');
+      }
+    } catch(e) {
+      if (tempEl) tempEl.remove();
+      URL.revokeObjectURL(objectUrl);
+      lastErrorMsg = e.name === 'AbortError'
+        ? '⚠️ Timeout upload file ' + (i+1) + ' (koneksi terlalu lambat/putus)'
+        : '⚠️ Gagal upload file ' + (i+1) + ': ' + (e.message||'').substring(0, 80);
+      if (status) status.textContent = lastErrorMsg;
+    }
+  }
+
+  uploadLabels.forEach(function(l){
+    l.style.opacity = '';
+    l.style.pointerEvents = '';
+  });
+  var total = auditItems[code].fotoUrls.length;
+  if (total > 0 && btn) {
+    btn.classList.add('uploaded');
+    btn.innerHTML = String.fromCodePoint(0x2705) + ' ' + total + '/3 Tersimpan';
+  }
+  uploadLabels.forEach(function(l){
+    l.classList.add('uploaded');
+    l.style.borderStyle = 'solid';
+  });
+  if (status) {
+    status.textContent = lastErrorMsg
+      ? lastErrorMsg + ' · ' + total + '/3 tersimpan'
+      : total + '/3 file di Drive' + (total < 3 ? ' (bisa tambah lagi)' : '');
+  }
+  event.target.value = '';
+}
+
+
+// Fetch dengan timeout — mencegah upload nge-hang selamanya kalau koneksi
+// putus di tengah jalan (server sudah selesai proses tapi response gak balik).
+function fetchWithTimeout(url, options, timeoutMs) {
+  var controller = new AbortController();
+  var timer = setTimeout(function(){ controller.abort(); }, timeoutMs || 60000);
+  return fetch(url, Object.assign({}, options, { signal: controller.signal }))
+    .finally(function(){ clearTimeout(timer); });
+}
+
+// ── POST JSON DENGAN DETEKSI "RESPONS NYASAR" + RETRY OTOMATIS ──────
+// Kadang Apps Script balikin halaman HTML (bukan JSON dari doPost kita)
+// meskipun eksekusinya sendiri sukses di server — biasanya karena Google
+// menyelipkan halaman re-verifikasi/consent sesaat setelah redeploy, atau
+// redirect internal script.google.com → script.googleusercontent.com
+// yang nyangkut di tengah jalan (umum terjadi di Chrome Android).
+// Ini BUKAN error permanen, jadi retry beberapa kali dulu sebelum nyerah.
+async function postJSON(url, bodyObj, timeoutMs, maxRetries) {
+  if (maxRetries === undefined) maxRetries = 2;
+  var lastErr;
+  for (var attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      var r = await fetchWithTimeout(url, {
+        method : 'POST',
+        headers: {'Content-Type': 'text/plain;charset=utf-8'},
+        body   : JSON.stringify(bodyObj)
+      }, timeoutMs);
+      var text = await r.text();
+      var trimmed = text.trim();
+      if (trimmed.charAt(0) === '<') {
+        var htmlErr = new Error('Respons server tidak valid (halaman HTML, bukan data)');
+        htmlErr.name = 'HtmlResponseError';
+        throw htmlErr;
+      }
+      return JSON.parse(text);
+    } catch (e) {
+      lastErr = e;
+      var isNetworkish = e.name === 'AbortError' || e.name === 'HtmlResponseError' || e instanceof TypeError;
+      if (attempt < maxRetries && isNetworkish) {
+        await new Promise(function(res){ setTimeout(res, 1200 * (attempt + 1)); });
+        continue;
+      }
+      break;
+    }
+  }
+  if (lastErr && lastErr.name === 'HtmlResponseError') {
+    var e2 = new Error('Server Google sedang re-verifikasi (biasa terjadi habis redeploy). Sudah dicoba ulang otomatis, tapi masih gagal — coba lagi sebentar lagi.');
+    e2.name = 'HtmlResponseError';
+    throw e2;
+  }
+  throw lastErr || new Error('Gagal terhubung ke server.');
+}
+
+function fileToBase64(file) {
+  return new Promise(function(resolve, reject) {
+    var reader = new FileReader();
+    reader.onload  = function(e) { resolve(e.target.result); };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+
+// Compress image ke max 900px, 75% quality
+function compressImage(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const MAX = 900;
+        let w = img.width, h = img.height;
+        if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.75));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// ── SECTION NAV ───────────────────────────────────────────────
+function goToSection(idx) {
+  currentSectionIdx = idx;
+  saveProgress();
+  showScreen('screen-sec-' + SECTION_KEYS[idx]);
+}
+
+function nextSection(currentIdx) {
+  var secKey   = SECTION_KEYS[currentIdx];
+  var secItems = ITEMS.filter(function(i){ return i.section === secKey; });
+  var missingCatatan = [];
+  var missingBukti    = [];
+  secItems.forEach(function(item) {
+    var resp = auditItems[item.code];
+    if (resp && resp.comply === false) {
+      if (!resp.catatan.trim()) missingCatatan.push(item.code);
+      if (!resp.fotoUrls || resp.fotoUrls.length === 0) missingBukti.push(item.code);
+    }
+  });
+  if (missingCatatan.length > 0 || missingBukti.length > 0) {
+    var firstCode = missingCatatan[0] || missingBukti[0];
+    var firstEl = document.getElementById('cat-' + firstCode);
+    if (firstEl) { firstEl.style.borderColor = 'var(--red-600)'; firstEl.focus(); }
+    var msgParts = [];
+    if (missingCatatan.length > 0) msgParts.push('Catatan wajib diisi: ' + missingCatatan.join(', '));
+    if (missingBukti.length > 0) msgParts.push('Bukti foto/video wajib diupload (min. 1): ' + missingBukti.join(', '));
+    showError(msgParts.join(' · '));
+    var highlightCodes = missingCatatan.concat(missingBukti);
+    setTimeout(function() {
+      highlightCodes.forEach(function(code) {
+        var el = document.getElementById('cat-' + code);
+        if (el) el.style.borderColor = '';
+      });
+    }, 3000);
+    return;
+  }
+
+  if (currentIdx === SECTION_KEYS.length - 1) {
+    showSignatureScreen();
+  } else {
+    goToSection(currentIdx + 1);
+  }
+}
+
+// ── LIVE SCORE CALCULATION (preview, sebelum submit) ─────────────
+const GROUPINGS_CLIENT = { EA:'S', IA1:'S', IA2:'S', IA3:'S', IA4:'S' };
+
+function calculateLiveScores() {
+  const brandCount = { N:0, S:0, C:0, VC:0 };
+  const fsCount    = { N:0, S:0, C:0 };
+  const groupStatus = {};
+  Object.keys(GROUPINGS_CLIENT).forEach(g => { groupStatus[g] = true; });
+
+  ITEMS.forEach(item => {
+    const resp = auditItems[item.code] || { comply: true };
+    const comply = resp.comply;
+    if (item.groupParent) {
+      if (comply) groupStatus[item.groupParent] = false;
+      return;
+    }
+    if (comply) return;
+    if (item.section === 'FS') fsCount[item.cat] = (fsCount[item.cat]||0) + 1;
+    else brandCount[item.cat] = (brandCount[item.cat]||0) + 1;
+  });
+
+  Object.keys(GROUPINGS_CLIENT).forEach(gKey => {
+    const cat = GROUPINGS_CLIENT[gKey];
+    const hasItems = ITEMS.some(i => i.groupParent === gKey);
+    if (hasItems && groupStatus[gKey]) brandCount[cat]++;
+  });
+
+  let brandScore;
+  if (brandCount.VC > 0)      brandScore = Math.max(0, 1  - brandCount.VC*100);
+  else if (brandCount.C > 0)  brandScore = Math.max(0, 41 - brandCount.C*4);
+  else if (brandCount.S > 0)  brandScore = Math.max(0, 71 - brandCount.S*2);
+  else if (brandCount.N > 0)  brandScore = Math.max(0, 100 - brandCount.N);
+  else                         brandScore = 100;
+
+  let fsScore;
+  if (fsCount.C > 0)      fsScore = Math.max(0, 10 - fsCount.C*100);
+  else if (fsCount.S > 0) fsScore = Math.max(0, 80 - fsCount.S*10);
+  else if (fsCount.N > 0) fsScore = Math.max(0, 100 - fsCount.N*5);
+  else                     fsScore = 100;
+
+  const finalScoreRaw = fsScore*0.5 + brandScore*0.5;
+  const finalScore = Math.round(finalScoreRaw * 10) / 10;
+  const grade = finalScore>=86?'A':finalScore>=70?'B':finalScore>=55?'C':finalScore>=40?'D':'F';
+
+  const allVC = brandCount.VC > 0;
+  const allC  = brandCount.C > 0 || fsCount.C > 0;
+  const allS  = brandCount.S > 0 || fsCount.S > 0;
+  const allN  = brandCount.N > 0 || fsCount.N > 0;
+  let sanksi;
+  if (finalScore > 85) sanksi = 'NO SP';
+  else if (allVC)       sanksi = 'SP3';
+  else if (allC)         sanksi = 'SP2';
+  else if (allS)         sanksi = 'SP1';
+  else if (allN)         sanksi = 'PERINGATAN';
+  else                    sanksi = 'NO SP';
+
+  return { brandScore, fsScore, finalScore, grade, sanksi };
+}
+
+function formatScoreClient(n) {
+  const rounded = Math.round(n * 10) / 10;
+  return (Math.abs(rounded - Math.round(rounded)) < 1e-9)
+    ? String(Math.round(rounded))
+    : rounded.toFixed(1);
+}
+
+// ── REVIEW ────────────────────────────────────────────────────
+function showReview() {
+  const reviewContent = document.getElementById('review-content');
+  const liveScores = calculateLiveScores();
+  const gradeColors = { A:'#0B2545', B:'#1E3A5F', C:'#D97706', D:'#DC2626', F:'#7F1D1D' };
+  const sanksiColors = { 'NO SP':'#0B2545', 'PERINGATAN':'#5F8B00', SP1:'#D35400', SP2:'#C0392B', SP3:'#7B0000' };
+  const sanksiDesc = { 'NO SP':'Tidak ada potensi sanksi', 'PERINGATAN':'Hanya temuan Normal',
+    SP1:'Ada temuan Serious', SP2:'Ada temuan Critical', SP3:'Ada temuan Very Critical' };
+
+  let html = `
+    <div style="background:var(--green-900);color:#fff;border-radius:12px;padding:16px 20px;margin-bottom:16px;">
+      <div style="font-size:16px;font-weight:700;margin-bottom:4px;">Ringkasan Audit</div>
+      <div style="font-size:13px;opacity:.7;">${auditInfo.nomorOutlet} · ${auditInfo.tanggalAudit}</div>
+    </div>
+
+    <div class="review-section">
+      <div class="review-section-title">Ringkasan Skor (Estimasi)</div>
+      <div class="score-grid">
+        <div class="score-card">
+          <div class="score-card-label">Final Score</div>
+          <div class="score-card-value" style="color:${gradeColors[liveScores.grade]}">${formatScoreClient(liveScores.finalScore)}</div>
+          <div class="score-card-sub">Grade ${liveScores.grade}</div>
+        </div>
+        <div class="score-card">
+          <div class="score-card-label">Brand Standards</div>
+          <div class="score-card-value">${formatScoreClient(liveScores.brandScore)}</div>
+          <div class="score-card-sub">/ 100</div>
+        </div>
+        <div class="score-card">
+          <div class="score-card-label">Food Safety</div>
+          <div class="score-card-value">${formatScoreClient(liveScores.fsScore)}</div>
+          <div class="score-card-sub">/ 100</div>
+        </div>
+      </div>
+      <div class="sanksi-banner" style="background:${sanksiColors[liveScores.sanksi]}">
+        <span class="sanksi-banner-title">⚠️ Potensi Sanksi: ${liveScores.sanksi}</span>
+        <span class="sanksi-banner-desc">${sanksiDesc[liveScores.sanksi]}</span>
+      </div>
+      <p class="score-disclaimer">*Estimasi otomatis dari jawaban checklist di HP ini. Skor resmi tetap dihitung ulang oleh server dan itulah yang tercantum di laporan PDF.</p>
+    </div>
+
+    <div style="background:#fff;border-radius:12px;padding:16px;margin-bottom:16px;box-shadow:var(--shadow);">
+      ${['nomorOutlet','namaAuditor','tanggalAudit','posisiAuditor','kategoriAudit','statusKebun','emailPIC'].map(k => `
+        <div class="summary-item">
+          <span class="summary-label">${k.replace(/([A-Z])/g,' $1').replace(/^./, s=>s.toUpperCase())}</span>
+          <span class="summary-value">${auditInfo[k]||'-'}</span>
+        </div>`).join('')}
+    </div>`;
+
+  SECTION_KEYS.forEach(secKey => {
+    const items = ITEMS.filter(i => i.section === secKey);
+    const nonComply = items.filter(i => !auditItems[i.code]?.comply);
+    html += `
+      <div class="review-section">
+        <div class="review-section-title">
+          ${SECTION_LABELS[secKey]}
+          <span class="review-count ${nonComply.length > 0 ? 'badge-fail' : 'badge-pass'}">
+            ${items.length - nonComply.length}/${items.length} comply
+          </span>
+        </div>
+        ${nonComply.length === 0
+          ? '<div style="font-size:12px;color:var(--green-700);padding:4px 0;">✅ Semua item comply</div>'
+          : nonComply.map(item => `
+            <div class="review-row">
+              <span class="review-row-label">${item.code} · ${item.label.substring(0,60)}${item.label.length>60?'...':''}</span>
+              <span class="review-row-status status-tidak">Tidak</span>
+            </div>`).join('')}
+      </div>`;
+  });
+
+  const totalItems    = ITEMS.length;
+  const totalComply   = ITEMS.filter(i => auditItems[i.code]?.comply).length;
+  const totalNonComply = totalItems - totalComply;
+
+  html += `
+    <div style="background:var(--green-900);color:#fff;border-radius:12px;padding:16px 20px;margin-bottom:8px;text-align:center;">
+      <div style="font-size:28px;font-weight:700;">${totalComply} / ${totalItems}</div>
+      <div style="font-size:13px;opacity:.7;margin-top:4px;">Item Comply · ${totalNonComply} temuan non-comply</div>
+    </div>`;
+
+  reviewContent.innerHTML = html;
+  showScreen('screen-review');
+}
+
+// ── FINAL SUBMIT ──────────────────────────────────────────────
+async function finalSubmit() {
+  document.getElementById('btn-final-submit').disabled = true;
+  showScreen('screen-submit');
+  updateSubmitProgress('Memproses data audit...');
+
+  const payload = { info: auditInfo, items: auditItems };
+
+  updateSubmitProgress('Menyimpan ke database dan generate laporan PDF...');
+
+  var loadMsgs = [
+    'Mengirim data ke server...',
+    'Memvalidasi data audit...',
+    'Menghubungkan ke server...',
+    'Hampir selesai...'
+  ];
+  var msgIdx = 0;
+  var msgTimer = setInterval(function() {
+    if (msgIdx < loadMsgs.length) {
+      var el = document.getElementById('submit-progress-text');
+      if (el) el.textContent = loadMsgs[msgIdx++];
+    }
+  }, 4000);
+
+  try {
+    // postJSON: kalau Google sempat balikin halaman HTML nyasar
+    // (re-auth/redirect), otomatis retry dulu sebelum benar-benar gagal.
+    // TIDAK pakai retry untuk timeout murni — itu ditangani terpisah di
+    // bawah karena submit_audit yang timeout biasanya TETAP jalan di
+    // server (arsitektur async), jadi retry di sini berisiko submit dobel.
+    var result = await postJSON(APPS_SCRIPT_URL, { action:'submit_audit', payload:payload }, 30000, 1);
+    clearInterval(msgTimer);
+
+    if (result && result.success) {
+      document.getElementById('success-msg').textContent =
+        result.message || 'Laporan berhasil dikirim ke email PIC outlet.';
+      try {
+        localStorage.setItem('audit_sai_last_submission', JSON.stringify({
+          info: auditInfo, items: auditItems,
+          submittedAt: new Date().toISOString()
+        }));
+      } catch(e) {}
+      clearProgress();
+      showScreen('screen-success');
+    } else {
+      showError(result ? (result.message||'Server error') : 'Server error');
+      showScreen('screen-review');
+      document.getElementById('btn-final-submit').disabled = false;
+    }
+  } catch (err) {
+    clearInterval(msgTimer);
+    if (err.name === 'AbortError') {
+      // Timeout tapi kemungkinan besar masih proses di server (arsitektur
+      // async) — tampilkan success, JANGAN retry (mencegah submit dobel).
+      document.getElementById('success-msg').textContent =
+        'Form berhasil disubmit! Laporan sedang diproses di server.\nCek email dalam 2-3 menit.';
+      try {
+        localStorage.setItem('audit_sai_last_submission', JSON.stringify({
+          info: auditInfo, items: auditItems,
+          submittedAt: new Date().toISOString()
+        }));
+      } catch(e) {}
+      clearProgress();
+      showScreen('screen-success');
+    } else if (err.name === 'HtmlResponseError') {
+      // Sudah dicoba ulang otomatis oleh postJSON dan tetap gagal —
+      // JANGAN auto-retry lagi di sini (risiko submit dobel). Minta
+      // auditor coba manual, kasih tahu ini bukan kesalahan data mereka.
+      showError(err.message);
+      showScreen('screen-review');
+      document.getElementById('btn-final-submit').disabled = false;
+    } else {
+      showError('Gagal terhubung ke server: ' + err.message);
+      showScreen('screen-review');
+      document.getElementById('btn-final-submit').disabled = false;
+    }
+  }
+}
+
+function updateSubmitProgress(msg) {
+  const el = document.getElementById('submit-progress-text');
+  if (el) el.textContent = msg;
+}
+
+
+// ── RESET ─────────────────────────────────────────────────────
+function resetForm() {
+  clearProgress();
+  auditInfo  = {};
+  auditItems = {};
+  extraPhotos = { bersama:'', commbook:'' };
+  ITEMS.forEach(i => { auditItems[i.code] = { comply:true, catatan:'', fotoUrl:'' }; });
+  document.getElementById('screen-sections').innerHTML = '';
+
+  ['f-outlet','f-nama-outlet','f-alamat','f-auditor','f-tanggal','f-posisi','f-status','f-kategori','f-email']
+    .forEach(function(id){
+      var el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+
+  ['f-pic-nama','f-pic-jabatan'].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  try { clearSig('auditor'); clearSig('pic'); } catch(e) {}
+  ['bersama','commbook'].forEach(function(key){
+    var btn = document.getElementById('foto-btn-' + key);
+    var thumb = document.getElementById('foto-thumb-' + key);
+    var status = document.getElementById('foto-status-' + key);
+    var removeBtn = document.getElementById('foto-remove-' + key);
+    if (btn) { btn.classList.remove('uploaded'); btn.innerHTML = '📷 Kamera'; }
+    if (thumb) { thumb.src = ''; thumb.classList.remove('show'); }
+    if (status) status.textContent = '';
+    if (removeBtn) removeBtn.style.display = 'none';
+  });
+
+  showScreen('screen-splash');
+}
+
+function loadLastSubmission() {
+  try {
+    var raw = localStorage.getItem('audit_sai_last_submission');
+    if (!raw) { showError('Tidak ada data submission terakhir yang tersimpan.'); return; }
+    var saved = JSON.parse(raw);
+    var subTime = saved.submittedAt ? new Date(saved.submittedAt).toLocaleString('id-ID') : '-';
+
+    var banner = document.createElement('div');
+    banner.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+    var box = document.createElement('div');
+    box.style.cssText = 'background:#fff;border-radius:16px;padding:24px;max-width:320px;width:100%;text-align:center;';
+
+    var title = document.createElement('p');
+    title.style.cssText = 'font-weight:700;font-size:16px;margin-bottom:8px;';
+    title.textContent = 'Load Data Terakhir?';
+
+    var outlet = document.createElement('p');
+    outlet.style.cssText = 'font-size:13px;color:#666;margin-bottom:4px;';
+    outlet.innerHTML = 'Outlet: <strong>' + (saved.info.nomorOutlet||'-') + '</strong>';
+
+    var time = document.createElement('p');
+    time.style.cssText = 'font-size:13px;color:#666;margin-bottom:16px;';
+    time.textContent = 'Dikirim: ' + subTime;
+
+    var desc = document.createElement('p');
+    desc.style.cssText = 'font-size:12px;color:#888;margin-bottom:20px;';
+    desc.textContent = 'Semua jawaban dan foto akan dimuat ulang. Kamu bisa edit lalu kirim ulang.';
+
+    var btnRow = document.createElement('div');
+    btnRow.style.cssText = 'display:flex;gap:8px;';
+
+    var btnBatal = document.createElement('button');
+    btnBatal.style.cssText = 'flex:1;padding:12px;border:1.5px solid #ccc;border-radius:10px;background:#fff;font-size:14px;font-weight:600;cursor:pointer;';
+    btnBatal.textContent = 'Batal';
+    btnBatal.onclick = function() { banner.remove(); };
+
+    var btnYa = document.createElement('button');
+    btnYa.style.cssText = 'flex:1;padding:12px;border:none;border-radius:10px;background:#0B2545;color:#fff;font-size:14px;font-weight:600;cursor:pointer;';
+    btnYa.textContent = 'Ya, Muat';
+    btnYa.onclick = confirmLoadLast;
+
+    btnRow.appendChild(btnBatal);
+    btnRow.appendChild(btnYa);
+    box.appendChild(title);
+    box.appendChild(outlet);
+    box.appendChild(time);
+    box.appendChild(desc);
+    box.appendChild(btnRow);
+    banner.appendChild(box);
+    document.body.appendChild(banner);
+    window._lastSubmissionBanner = banner;
+  } catch(e) {
+    showError('Gagal memuat data terakhir: ' + e.message);
+  }
+}
+
+function confirmLoadLast() {
+  if (window._lastSubmissionBanner) window._lastSubmissionBanner.remove();
+  try {
+    var saved = JSON.parse(localStorage.getItem('audit_sai_last_submission'));
+    auditInfo   = saved.info  || {};
+    auditItems  = saved.items || {};
+    extraPhotos = { bersama: auditInfo.fotoBersama||'', commbook: auditInfo.fotoCommBook||'' };
+    saveProgress();
+
+    buildSectionScreens();
+    restoreItemVisuals();
+    restoreSignatureScreen();
+
+    fillInfoFields();
+    showScreen('screen-info');
+  } catch(e) {
+    showError('Gagal memuat: ' + e.message);
+  }
+}
+</script>
+</body>
+</html>
